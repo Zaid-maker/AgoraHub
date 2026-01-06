@@ -4,6 +4,7 @@ import TopicCard from "@/components/TopicCard";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { cn } from "@/lib/utils";
+import ProfileActions from "@/components/ProfileActions";
 
 interface ProfilePageProps {
     params: Promise<{ username: string }>;
@@ -63,13 +64,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                     </div>
                 </div>
 
-                {isOwnProfile && (
-                    <div className="absolute top-1/2 right-4 -translate-y-1/2">
-                        <button className="h-12 px-8 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white rounded-2xl font-bold transition-all text-sm uppercase tracking-widest shadow-xl">
-                            Edit Profile
-                        </button>
-                    </div>
-                )}
+                {isOwnProfile && <ProfileActions user={profile} />}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">

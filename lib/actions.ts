@@ -355,3 +355,41 @@ export async function getUserProfile(identifier: string) {
         }))
     };
 }
+
+export async function updateProfile(formData: FormData) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const name = formData.get("name") as string;
+    const username = formData.get("username") as string;
+    const bio = formData.get("bio") as string;
+
+    // Check if username is taken if it's changing
+    if (username && username !== (session.user as any).username) {
+        const existing = await prisma.user.findUnique({
+            where: { username }
+        });
+        if (existing) {
+            throw new Error("Username already taken");
+        }
+    }
+
+    const updatedUser = await prisma.user.update({
+        where: { id: session.user.id },
+        data: {
+            name,
+            username: username || null,
+            bio
+        }
+    });
+
+    revalidatePath(`/profile/${updatedUser.username || updatedUser.id}`);
+    revalidatePath(`/profile/${(session.user as any).username || session.user.id}`);
+
+    return { success: true };
+}
