@@ -1,9 +1,15 @@
-import MainLayout from "@/components/MainLayout";
 import TopicCard from "@/components/TopicCard";
 import { getTopics } from "@/lib/actions";
+import CreateTopicButton from "@/components/CreateTopicButton";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export default async function Home() {
   const topicsData = await getTopics();
+
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   const topics = topicsData.map(t => ({
     id: t.id,
@@ -23,9 +29,7 @@ export default async function Home() {
           <h1 className="text-3xl font-extrabold tracking-tight">Recent Discussions</h1>
           <p className="text-zinc-500 mt-1">Stay up to date with the latest from the community.</p>
         </div>
-        <button className="hidden sm:inline-flex h-10 items-center justify-center rounded-full bg-gold hover:bg-gold-hover px-6 text-sm font-bold text-navy transition-all shadow-sm">
-          Start a Topic
-        </button>
+        <CreateTopicButton />
       </div>
 
       <div className="grid gap-4">

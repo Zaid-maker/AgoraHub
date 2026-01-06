@@ -3,6 +3,7 @@ import { getCategories } from '@/lib/actions';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import UserNav from './UserNav';
+import CreateTopicButton from './CreateTopicButton';
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
     const categories = await getCategories();
@@ -44,6 +45,10 @@ export default async function MainLayout({ children }: { children: React.ReactNo
                     </div>
 
                     <div className="flex items-center gap-4">
+                        <CreateTopicButton
+                            className="h-10 px-4 sm:px-6 bg-slate-100 dark:bg-slate-800/50 hover:bg-gold dark:hover:bg-gold text-slate-600 dark:text-slate-400 hover:text-navy dark:hover:text-navy border border-slate-200 dark:border-slate-700 hover:border-gold dark:hover:border-gold transition-all shadow-none hover:shadow-gold/10 !text-[10px]"
+                        />
+
                         {session ? (
                             <UserNav user={session.user} />
                         ) : (
