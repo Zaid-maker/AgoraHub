@@ -23,6 +23,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
     const joinedDate = new Date(profile.createdAt).toLocaleDateString("en-US", {
         month: "long",
+        day: "numeric",
         year: "numeric"
     });
 
@@ -88,7 +89,17 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                                 </div>
                                 <div className="p-4 rounded-3xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
                                     <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Reputation</span>
-                                    <span className="text-sm font-bold text-gold">Legionnaire</span>
+                                    <span className="text-sm font-bold text-gold">
+                                        {(() => {
+                                            const posts = profile.topicCount + profile.commentCount;
+                                            if (posts === 0) return "Novice";
+                                            if (posts <= 5) return "Initiate";
+                                            if (posts <= 15) return "Pioneer";
+                                            if (posts <= 50) return "Legionnaire";
+                                            if (posts <= 150) return "Centurion";
+                                            return "Legend";
+                                        })()}
+                                    </span>
                                 </div>
                             </div>
                         </div>

@@ -10,6 +10,7 @@ export default function SignUp() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
+    const [username, setUsername] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const router = useRouter();
@@ -23,6 +24,7 @@ export default function SignUp() {
             email,
             password,
             name,
+            username: username || undefined,
             callbackURL: "/",
         });
 
@@ -52,11 +54,11 @@ export default function SignUp() {
         <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-[#0F172A]">
             <div className="w-full max-w-md">
                 <div className="text-center mb-10">
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Create Account</h1>
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white uppercase">Create Account</h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium italic">Join the next generation of discussion</p>
                 </div>
 
-                <div className="glass p-8 rounded-3xl border border-white/20 dark:border-slate-800 shadow-2xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80">
+                <div className="glass p-8 rounded-[2.5rem] border border-white/20 dark:border-slate-800 shadow-2xl backdrop-blur-xl bg-white/80 dark:bg-slate-900/80">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {error && (
                             <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm rounded-xl font-medium animate-in fade-in slide-in-from-top-2">
@@ -65,37 +67,51 @@ export default function SignUp() {
                         )}
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Full Name</label>
+                            <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
                             <input
                                 type="text"
                                 required
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full h-12 px-4 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full h-12 px-4 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-bold"
                                 placeholder="John Doe"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Email Address</label>
+                            <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Unique Username</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">@</span>
+                                <input
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    className="w-full h-12 pl-10 pr-4 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-bold"
+                                    placeholder="yourid"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
                             <input
                                 type="email"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full h-12 px-4 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full h-12 px-4 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-bold"
                                 placeholder="you@example.com"
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">Password</label>
+                            <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest ml-1">Password</label>
                             <input
                                 type="password"
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full h-12 px-4 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                                className="w-full h-12 px-4 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-gold focus:border-transparent transition-all text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-bold"
                                 placeholder="••••••••"
                             />
                         </div>
@@ -111,13 +127,13 @@ export default function SignUp() {
 
                     <div className="my-6 flex items-center gap-4">
                         <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Or continue with</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Or continue with</span>
                         <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
                     </div>
 
                     <button
                         onClick={handleGoogleSignIn}
-                        className="w-full h-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700"
+                        className="w-full h-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-black rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 uppercase tracking-widest text-[10px]"
                     >
                         <svg className="w-5 h-5" viewBox="0 0 24 24">
                             <path
@@ -133,7 +149,7 @@ export default function SignUp() {
                                 fill="#FBBC05"
                             />
                             <path
-                                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                                 fill="#EA4335"
                             />
                         </svg>
