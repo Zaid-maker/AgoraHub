@@ -3,6 +3,8 @@
 import prisma from './prisma';
 import slugify from 'slugify';
 import { revalidatePath } from 'next/cache';
+import { auth } from './auth';
+import { headers } from 'next/headers';
 
 export async function getCategories() {
     return await prisma.category.findMany({
@@ -19,6 +21,7 @@ export async function getTopics(categoryId?: string) {
         where: categoryId ? { categoryId } : {},
         include: {
             category: true,
+            author: true,
             _count: {
                 select: { comments: true }
             }
@@ -34,12 +37,19 @@ export async function getTopicById(id: string) {
         where: { id },
         include: {
             category: true,
+            author: true,
             comments: {
                 where: { parentId: null },
                 include: {
+                    author: true,
                     replies: {
                         include: {
-                            replies: true // This only goes 2 levels deep. Recursive fetching is complex in Prisma.
+                            author: true,
+                            replies: {
+                                include: {
+                                    author: true
+                                }
+                            }
                         }
                     }
                 },
@@ -52,16 +62,23 @@ export async function getTopicById(id: string) {
 }
 
 export async function createTopic(formData: FormData) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) {
+        throw new Error('Unauthorized');
+    }
+
     const title = formData.get('title') as string;
     const content = formData.get('content') as string;
-    const author = formData.get('author') as string;
     const categoryId = formData.get('categoryId') as string;
 
     const topic = await prisma.topic.create({
         data: {
             title,
             content,
-            author,
+            authorId: session.user.id,
             categoryId
         }
     });
@@ -71,17 +88,24 @@ export async function createTopic(formData: FormData) {
 }
 
 export async function createComment(formData: FormData) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) {
+        throw new Error('Unauthorized');
+    }
+
     const content = formData.get('content') as string;
-    const author = formData.get('author') as string;
     const topicId = formData.get('topicId') as string;
     const parentId = formData.get('parentId') as string | null;
 
     const comment = await prisma.comment.create({
         data: {
             content,
-            author,
             topicId,
-            parentId: parentId || null
+            parentId: parentId || null,
+            authorId: session.user.id
         }
     });
 
@@ -90,7 +114,17 @@ export async function createComment(formData: FormData) {
 }
 
 export async function seedData() {
-    // 1. Seed Categories
+    // 1. Seed User
+    const user = await prisma.user.upsert({
+        where: { email: 'admin@agorahub.com' },
+        update: {},
+        create: {
+            name: 'Agora Admin',
+            email: 'admin@agorahub.com',
+        }
+    });
+
+    // 2. Seed Categories
     const categoryNames = ['Technology', 'Design', 'Development', 'General', 'Feedback'];
     const categories = [];
 
@@ -109,13 +143,13 @@ export async function seedData() {
     const devCat = categories.find(c => c.name === 'Development');
     const techCat = categories.find(c => c.name === 'Technology');
 
-    // 2. Seed Topics
+    // 3. Seed Topics
     if (devCat && techCat) {
         const topic1 = await prisma.topic.create({
             data: {
                 title: "How to handle large scale state in React 19?",
                 content: "I've been working on a massive enterprise application and we're starting to hit some performance bottlenecks with our current state management approach. We use a mix of Context and Prop drilling (I know, I know). \n\nWith React 19's focus on stability and performance, what are the best practices now? Should we look into signals, or is the new 'use' hook and server components enough to mitigate global state needs?",
-                author: "frontend_guru",
+                authorId: user.id,
                 categoryId: devCat.id
             }
         });
@@ -124,16 +158,16 @@ export async function seedData() {
             data: {
                 title: "The future of CSS: Tailwind v4 vs StyleX",
                 content: "Tailwind v4 is bringing some massive changes. But StyleX from Meta offers a very different approach with build-time CSS. Which one is better for a design system team?",
-                author: "design_system_pro",
+                authorId: user.id,
                 categoryId: techCat.id
             }
         });
 
-        // 3. Seed Comments for Topic 1
+        // 4. Seed Comments for Topic 1
         const comment1 = await prisma.comment.create({
             data: {
                 content: "React 19 doesn't fundamentally change how we should handle global state, but it does make some things easier. Personally, I think Zustand is still the way to go for most use cases.",
-                author: "react_lover",
+                authorId: user.id,
                 topicId: topic1.id
             }
         });
@@ -141,7 +175,7 @@ export async function seedData() {
         await prisma.comment.create({
             data: {
                 content: "Do you find Zustand handles complex derived state well? We have a lot of inter-dependent state slices.",
-                author: "frontend_guru",
+                authorId: user.id,
                 topicId: topic1.id,
                 parentId: comment1.id
             }
@@ -150,7 +184,7 @@ export async function seedData() {
         await prisma.comment.create({
             data: {
                 content: "Have you tried looking into Preact-style signals? There are some great libraries that bring that mental model to React.",
-                author: "signal_fan",
+                authorId: user.id,
                 topicId: topic1.id
             }
         });

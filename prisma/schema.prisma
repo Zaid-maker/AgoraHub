@@ -17,21 +17,75 @@ model Topic {
   id         String    @id @default(cuid())
   title      String
   content    String
-  author     String
   createdAt  DateTime  @default(now())
   category   Category  @relation(fields: [categoryId], references: [id])
   categoryId String
+  authorId   String
+  author     User      @relation(fields: [authorId], references: [id])
   comments   Comment[]
 }
 
 model Comment {
   id        String    @id @default(cuid())
   content   String
-  author    String
   createdAt DateTime  @default(now())
   topic     Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
   topicId   String
-  parent    Comment?  @relation("Thread", fields: [parentId], references: [id], onDelete: Cascade)
   parentId  String?
+  parent    Comment?  @relation("Thread", fields: [parentId], references: [id], onDelete: Cascade)
   replies   Comment[] @relation("Thread")
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  topics        Topic[]
+  comments      Comment[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

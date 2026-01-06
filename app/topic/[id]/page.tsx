@@ -13,21 +13,25 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
 
     const topicDetail = {
         ...topic,
+        author: topic.author.name,
         category: topic.category.name,
         timeAgo: new Date(topic.createdAt).toLocaleDateString(),
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${topic.author}`,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${topic.author.name}`,
         comments: topic.comments.map(c => ({
             ...c,
+            author: c.author.name,
             timeAgo: new Date(c.createdAt).toLocaleDateString(),
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.author}`,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.author.name}`,
             replies: c.replies.map(r => ({
                 ...r,
+                author: r.author.name,
                 timeAgo: new Date(r.createdAt).toLocaleDateString(),
-                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author}`,
+                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author.name}`,
                 replies: r.replies.map(rr => ({
                     ...rr,
+                    author: rr.author.name,
                     timeAgo: new Date(rr.createdAt).toLocaleDateString(),
-                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${rr.author}`,
+                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${rr.author.name}`,
                 }))
             }))
         }))

@@ -9,11 +9,11 @@ export default async function Home() {
     id: t.id,
     title: t.title,
     excerpt: t.content.substring(0, 150) + (t.content.length > 150 ? '...' : ''),
-    author: t.author,
+    author: t.author.name,
     category: t.category.name,
     replies: t._count.comments,
     timeAgo: new Date(t.createdAt).toLocaleDateString(), // Simple date for now
-    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${t.author}`
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${t.author.name}`
   }));
 
   return (
