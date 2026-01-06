@@ -303,3 +303,93 @@ export async function seedData() {
         });
     }
 }
+
+export async function getUserProfile(identifier: string) {
+    const user = await prisma.user.findFirst({
+        where: {
+            OR: [
+                { id: identifier },
+                { username: identifier }
+            ]
+        },
+        include: {
+            topics: {
+                include: {
+                    category: true,
+                    _count: { select: { comments: true } },
+                    votes: true
+                },
+                orderBy: { createdAt: 'desc' }
+            },
+            comments: {
+                include: {
+                    topic: {
+                        include: { category: true }
+                    },
+                    votes: true
+                },
+                orderBy: { createdAt: 'desc' }
+            },
+            _count: {
+                select: {
+                    topics: true,
+                    comments: true
+                }
+            }
+        }
+    });
+
+    if (!user) return null;
+
+    return {
+        ...user,
+        topicCount: user._count.topics,
+        commentCount: user._count.comments,
+        topics: user.topics.map(t => ({
+            ...t,
+            voteCount: t.votes.reduce((acc, v) => acc + v.value, 0)
+        })),
+        comments: user.comments.map(c => ({
+            ...c,
+            voteCount: c.votes.reduce((acc, v) => acc + v.value, 0)
+        }))
+    };
+}
+
+export async function updateProfile(formData: FormData) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const name = formData.get("name") as string;
+    const username = formData.get("username") as string;
+    const bio = formData.get("bio") as string;
+
+    // Check if username is taken if it's changing
+    if (username && username !== (session.user as any).username) {
+        const existing = await prisma.user.findUnique({
+            where: { username }
+        });
+        if (existing) {
+            throw new Error("Username already taken");
+        }
+    }
+
+    const updatedUser = await prisma.user.update({
+        where: { id: session.user.id },
+        data: {
+            name,
+            username: username || null,
+            bio
+        }
+    });
+
+    revalidatePath(`/profile/${updatedUser.username || updatedUser.id}`);
+    revalidatePath(`/profile/${(session.user as any).username || session.user.id}`);
+
+    return { success: true };
+}

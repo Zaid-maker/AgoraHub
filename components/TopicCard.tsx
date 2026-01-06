@@ -6,6 +6,7 @@ interface TopicCardProps {
     title: string;
     excerpt: string;
     author: string;
+    authorId: string;
     category: string;
     replies: number;
     timeAgo: string;
@@ -14,7 +15,7 @@ interface TopicCardProps {
     userVote: number;
 }
 
-export default function TopicCard({ id, title, excerpt, author, category, replies, timeAgo, avatar, voteCount, userVote }: TopicCardProps) {
+export default function TopicCard({ id, title, excerpt, author, authorId, category, replies, timeAgo, avatar, voteCount, userVote }: TopicCardProps) {
     return (
         <article className="bg-white dark:bg-zinc-900/50 border rounded-xl p-5 card-hover group relative">
             <div className="flex items-start gap-6">
@@ -25,7 +26,7 @@ export default function TopicCard({ id, title, excerpt, author, category, replie
                     initialUserVote={userVote}
                 />
 
-                <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex-shrink-0 overflow-hidden">
+                <Link href={`/profile/${authorId}`} className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex-shrink-0 overflow-hidden hover:ring-2 ring-gold/50 transition-all">
                     {avatar ? (
                         <img src={avatar} alt={author} className="w-full h-full object-cover" />
                     ) : (
@@ -33,7 +34,7 @@ export default function TopicCard({ id, title, excerpt, author, category, replie
                             {author[0].toUpperCase()}
                         </div>
                     )}
-                </div>
+                </Link>
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
@@ -56,7 +57,9 @@ export default function TopicCard({ id, title, excerpt, author, category, replie
 
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{author}</span>
+                            <Link href={`/profile/${authorId}`} className="text-xs font-bold text-slate-900 dark:text-slate-100 hover:text-gold transition-colors">
+                                {author}
+                            </Link>
                         </div>
 
                         <div className="flex items-center gap-4 text-slate-400">

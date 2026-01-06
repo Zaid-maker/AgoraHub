@@ -3,10 +3,15 @@
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
+import Link from "next/link";
+
 interface UserNavProps {
     user: {
+        id: string;
         name: string;
+        email: string;
         image?: string | null;
+        username?: string | null;
     };
 }
 
@@ -26,7 +31,10 @@ export default function UserNav({ user }: UserNavProps) {
 
     return (
         <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 pl-2 pr-4 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 group hover:border-gold/30 transition-colors cursor-default">
+            <Link
+                href={`/profile/${user.username || user.id}`}
+                className="flex items-center gap-3 pl-2 pr-4 py-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 group hover:border-gold/50 hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer shadow-sm hover:shadow-md"
+            >
                 <div className="w-8 h-8 rounded-xl overflow-hidden shadow-inner ring-2 ring-gold/10 group-hover:ring-gold/30 transition-all">
                     <img
                         src={user.image || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`}
@@ -35,10 +43,10 @@ export default function UserNav({ user }: UserNavProps) {
                     />
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black leading-none mb-1">Authenticated</span>
+                    <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black leading-none mb-1 group-hover:text-gold transition-colors">My Profile</span>
                     <span className="text-sm font-black truncate max-w-[120px] dark:text-white leading-none capitalize">{user.name}</span>
                 </div>
-            </div>
+            </Link>
 
             <button
                 onClick={handleSignOut}

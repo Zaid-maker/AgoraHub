@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation';
 interface Comment {
     id: string;
     author: string;
+    authorId: string;
     content: string;
     timeAgo: string;
     avatar: string;
@@ -14,6 +15,8 @@ interface Comment {
     userVote: number;
     replies?: Comment[];
 }
+
+import Link from 'next/link';
 
 interface CommentNodeProps {
     comment: Comment;
@@ -38,13 +41,15 @@ export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
                     />
                 </div>
 
-                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
+                <Link href={`/profile/${comment.authorId}`} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden hover:ring-2 ring-gold/50 transition-all">
                     <img src={comment.avatar} alt={comment.author} className="w-full h-full object-cover" />
-                </div>
+                </Link>
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-bold text-slate-900 dark:text-white">{comment.author}</span>
+                        <Link href={`/profile/${comment.authorId}`} className="text-sm font-bold text-slate-900 dark:text-white hover:text-gold transition-colors">
+                            {comment.author}
+                        </Link>
                         <span className="text-xs text-slate-400">•</span>
                         <span className="text-xs text-slate-400">{comment.timeAgo}</span>
                     </div>
