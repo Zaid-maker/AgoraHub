@@ -303,3 +303,55 @@ export async function seedData() {
         });
     }
 }
+
+export async function getUserProfile(identifier: string) {
+    const user = await prisma.user.findFirst({
+        where: {
+            OR: [
+                { id: identifier },
+                { username: identifier }
+            ]
+        },
+        include: {
+            topics: {
+                include: {
+                    category: true,
+                    _count: { select: { comments: true } },
+                    votes: true
+                },
+                orderBy: { createdAt: 'desc' }
+            },
+            comments: {
+                include: {
+                    topic: {
+                        include: { category: true }
+                    },
+                    votes: true
+                },
+                orderBy: { createdAt: 'desc' }
+            },
+            _count: {
+                select: {
+                    topics: true,
+                    comments: true
+                }
+            }
+        }
+    });
+
+    if (!user) return null;
+
+    return {
+        ...user,
+        topicCount: user._count.topics,
+        commentCount: user._count.comments,
+        topics: user.topics.map(t => ({
+            ...t,
+            voteCount: t.votes.reduce((acc, v) => acc + v.value, 0)
+        })),
+        comments: user.comments.map(c => ({
+            ...c,
+            voteCount: c.votes.reduce((acc, v) => acc + v.value, 0)
+        }))
+    };
+}
