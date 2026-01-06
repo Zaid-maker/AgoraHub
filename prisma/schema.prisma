@@ -23,6 +23,7 @@ model Topic {
   authorId   String
   author     User      @relation(fields: [authorId], references: [id])
   comments   Comment[]
+  votes      Vote[]
 }
 
 model Comment {
@@ -36,6 +37,7 @@ model Comment {
   replies   Comment[] @relation("Thread")
   authorId  String
   author    User      @relation(fields: [authorId], references: [id])
+  votes     Vote[]
 }
 
 model User {
@@ -50,6 +52,22 @@ model User {
   accounts      Account[]
   topics        Topic[]
   comments      Comment[]
+  votes         Vote[]
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  value     Int // 1 for upvote, -1 for downvote
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  topic     Topic?   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  topicId   String?
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String?
+
+  @@unique([userId, topicId])
+  @@unique([userId, commentId])
 }
 
 model Session {

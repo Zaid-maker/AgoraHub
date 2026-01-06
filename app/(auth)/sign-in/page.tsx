@@ -4,6 +4,7 @@ import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function SignIn() {
     const [email, setEmail] = useState("");
@@ -24,8 +25,14 @@ export default function SignIn() {
         });
 
         if (error) {
+            toast.error("Authentication failed", {
+                description: error.message || "Invalid email or password."
+            });
             setError(error.message || "Something went wrong");
         } else {
+            toast.success("Welcome back!", {
+                description: "Redirecting you to the hub dashboard."
+            });
             router.push("/");
             router.refresh();
         }

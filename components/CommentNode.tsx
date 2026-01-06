@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from 'react';
+import VoteControl from './VoteControl';
+import { useParams } from 'next/navigation';
 
 interface Comment {
     id: string;
@@ -8,6 +10,8 @@ interface Comment {
     content: string;
     timeAgo: string;
     avatar: string;
+    voteCount: number;
+    userVote: number;
     replies?: Comment[];
 }
 
@@ -18,10 +22,22 @@ interface CommentNodeProps {
 
 export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
     const [isExpanded, setIsExpanded] = useState(true);
+    const params = useParams();
+    const topicId = params.id as string;
 
     return (
-        <div className={`mt-4 ${depth > 0 ? 'ml-6 pl-4 border-l border-slate-200 dark:border-slate-800' : ''}`}>
-            <div className="flex items-start gap-3">
+        <div className={`mt-4 ${depth > 0 ? 'ml-6 pl-4 border-l border-white/5 dark:border-slate-800' : ''}`}>
+            <div className="flex items-start gap-4">
+                <div className="flex flex-col items-center pt-1">
+                    <VoteControl
+                        id={comment.id}
+                        type="comment"
+                        initialVotes={comment.voteCount}
+                        initialUserVote={comment.userVote}
+                        topicId={topicId}
+                    />
+                </div>
+
                 <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex-shrink-0 overflow-hidden">
                     <img src={comment.avatar} alt={comment.author} className="w-full h-full object-cover" />
                 </div>
@@ -39,7 +55,6 @@ export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
 
                     <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
                         <button className="hover:text-gold transition-colors uppercase tracking-widest">Reply</button>
-                        <button className="hover:text-gold transition-colors uppercase tracking-widest">Upvote</button>
                         {comment.replies && comment.replies.length > 0 && (
                             <button
                                 onClick={() => setIsExpanded(!isExpanded)}

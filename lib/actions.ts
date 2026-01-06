@@ -17,37 +17,56 @@ export async function getCategories() {
 }
 
 export async function getTopics(categoryId?: string) {
-    return await prisma.topic.findMany({
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    const topics = await prisma.topic.findMany({
         where: categoryId ? { categoryId } : {},
         include: {
             category: true,
             author: true,
             _count: {
                 select: { comments: true }
-            }
+            },
+            votes: true
         },
         orderBy: {
             createdAt: 'desc'
         }
     });
+
+    return topics.map(t => ({
+        ...t,
+        voteCount: t.votes.reduce((acc, v) => acc + v.value, 0),
+        userVote: t.votes.find(v => v.userId === session?.user.id)?.value || 0
+    }));
 }
 
 export async function getTopicById(id: string) {
-    return await prisma.topic.findUnique({
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    const topic = await prisma.topic.findUnique({
         where: { id },
         include: {
             category: true,
             author: true,
+            votes: true,
             comments: {
                 where: { parentId: null },
                 include: {
                     author: true,
+                    votes: true,
                     replies: {
                         include: {
                             author: true,
+                            votes: true,
                             replies: {
                                 include: {
-                                    author: true
+                                    author: true,
+                                    votes: true
                                 }
                             }
                         }
@@ -59,8 +78,102 @@ export async function getTopicById(id: string) {
             }
         }
     });
+
+    if (!topic) return null;
+
+    const processComment = (c: any): any => ({
+        ...c,
+        voteCount: c.votes.reduce((acc: number, v: any) => acc + v.value, 0),
+        userVote: c.votes.find((v: any) => v.userId === session?.user.id)?.value || 0,
+        replies: c.replies?.map(processComment)
+    });
+
+    return {
+        ...topic,
+        voteCount: topic.votes.reduce((acc, v) => acc + v.value, 0),
+        userVote: topic.votes.find(v => v.userId === session?.user.id)?.value || 0,
+        comments: topic.comments.map(processComment)
+    };
 }
 
+export async function voteTopic(topicId: string, value: number) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) throw new Error("Unauthorized");
+
+    const existingVote = await prisma.vote.findUnique({
+        where: {
+            userId_topicId: {
+                userId: session.user.id,
+                topicId
+            }
+        }
+    });
+
+    if (existingVote) {
+        if (existingVote.value === value) {
+            // Remove vote if clicking same button
+            await prisma.vote.delete({ where: { id: existingVote.id } });
+        } else {
+            // Change vote direction
+            await prisma.vote.update({
+                where: { id: existingVote.id },
+                data: { value }
+            });
+        }
+    } else {
+        await prisma.vote.create({
+            data: {
+                userId: session.user.id,
+                topicId,
+                value
+            }
+        });
+    }
+
+    revalidatePath(`/`);
+    revalidatePath(`/topic/${topicId}`);
+}
+
+export async function voteComment(commentId: string, value: number, topicId: string) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) throw new Error("Unauthorized");
+
+    const existingVote = await prisma.vote.findUnique({
+        where: {
+            userId_commentId: {
+                userId: session.user.id,
+                commentId
+            }
+        }
+    });
+
+    if (existingVote) {
+        if (existingVote.value === value) {
+            await prisma.vote.delete({ where: { id: existingVote.id } });
+        } else {
+            await prisma.vote.update({
+                where: { id: existingVote.id },
+                data: { value }
+            });
+        }
+    } else {
+        await prisma.vote.create({
+            data: {
+                userId: session.user.id,
+                commentId,
+                value
+            }
+        });
+    }
+
+    revalidatePath(`/topic/${topicId}`);
+}
 export async function createTopic(formData: FormData) {
     const session = await auth.api.getSession({
         headers: await headers(),

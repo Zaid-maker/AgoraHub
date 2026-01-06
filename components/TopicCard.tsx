@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import VoteControl from './VoteControl';
 
 interface TopicCardProps {
     id: string;
@@ -9,12 +10,21 @@ interface TopicCardProps {
     replies: number;
     timeAgo: string;
     avatar: string;
+    voteCount: number;
+    userVote: number;
 }
 
-export default function TopicCard({ id, title, excerpt, author, category, replies, timeAgo, avatar }: TopicCardProps) {
+export default function TopicCard({ id, title, excerpt, author, category, replies, timeAgo, avatar, voteCount, userVote }: TopicCardProps) {
     return (
         <article className="bg-white dark:bg-zinc-900/50 border rounded-xl p-5 card-hover group relative">
-            <div className="flex items-start gap-4">
+            <div className="flex items-start gap-6">
+                <VoteControl
+                    id={id}
+                    type="topic"
+                    initialVotes={voteCount}
+                    initialUserVote={userVote}
+                />
+
                 <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex-shrink-0 overflow-hidden">
                     {avatar ? (
                         <img src={avatar} alt={author} className="w-full h-full object-cover" />

@@ -18,8 +18,10 @@ export default async function Home() {
     author: t.author.name,
     category: t.category.name,
     replies: t._count.comments,
-    timeAgo: new Date(t.createdAt).toLocaleDateString(), // Simple date for now
-    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${t.author.name}`
+    timeAgo: new Date(t.createdAt).toLocaleDateString(),
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${t.author.name}`,
+    voteCount: t.voteCount,
+    userVote: t.userVote
   }));
 
   return (

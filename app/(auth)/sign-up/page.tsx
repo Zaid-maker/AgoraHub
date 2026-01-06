@@ -4,6 +4,7 @@ import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function SignUp() {
     const [email, setEmail] = useState("");
@@ -26,8 +27,14 @@ export default function SignUp() {
         });
 
         if (error) {
+            toast.error("Registration failed", {
+                description: error.message || "Could not create your account."
+            });
             setError(error.message || "Something went wrong");
         } else {
+            toast.success("Account Created!", {
+                description: "Welcome to Agora Hub! Start your first discussion now."
+            });
             router.push("/");
             router.refresh();
         }

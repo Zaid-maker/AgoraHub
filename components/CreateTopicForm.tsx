@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createTopic } from "@/lib/actions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 interface Category {
     id: string;
@@ -24,6 +25,9 @@ export default function CreateTopicForm({ categories }: { categories: Category[]
         try {
             const result = await createTopic(formData);
             if (result) {
+                toast.success("Discussion Launched!", {
+                    description: "Your new topic is now live on the hub."
+                });
                 router.push(`/topic/${result.id}`);
                 router.refresh();
             }

@@ -1,6 +1,7 @@
 import CommentNode from "@/components/CommentNode";
 import { getTopicById } from "@/lib/actions";
 import { notFound } from "next/navigation";
+import VoteControl from "@/components/VoteControl";
 
 export default async function TopicPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -21,12 +22,12 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
             author: c.author.name,
             timeAgo: new Date(c.createdAt).toLocaleDateString(),
             avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.author.name}`,
-            replies: c.replies.map(r => ({
+            replies: c.replies.map((r: any) => ({
                 ...r,
                 author: r.author.name,
                 timeAgo: new Date(r.createdAt).toLocaleDateString(),
                 avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author.name}`,
-                replies: r.replies.map(rr => ({
+                replies: r.replies.map((rr: any) => ({
                     ...rr,
                     author: rr.author.name,
                     timeAgo: new Date(rr.createdAt).toLocaleDateString(),
@@ -50,13 +51,25 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
                     {topicDetail.title}
                 </h1>
 
-                <div className="flex items-center gap-3 mb-8 pb-8 border-b border-zinc-200 dark:border-zinc-800">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-                        <img src={topicDetail.avatar} alt={topicDetail.author} className="w-full h-full object-cover" />
+                <div className="flex items-center justify-between mb-8 pb-8 border-b border-zinc-200 dark:border-zinc-800">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+                            <img src={topicDetail.avatar} alt={topicDetail.author} className="w-full h-full object-cover" />
+                        </div>
+                        <div>
+                            <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{topicDetail.author}</div>
+                            <div className="text-xs text-zinc-500 italic">Author</div>
+                        </div>
                     </div>
-                    <div>
-                        <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{topicDetail.author}</div>
-                        <div className="text-xs text-zinc-500 italic">Author</div>
+
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-2">Rate Topic</span>
+                        <VoteControl
+                            id={id}
+                            type="topic"
+                            initialVotes={topicDetail.voteCount}
+                            initialUserVote={topicDetail.userVote}
+                        />
                     </div>
                 </div>
 
