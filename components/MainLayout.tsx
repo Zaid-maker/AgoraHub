@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import { getCategories } from '@/lib/actions';
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default async function MainLayout({ children }: { children: React.ReactNode }) {
+    const categories = await getCategories();
+
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 selection:bg-zinc-200 dark:selection:bg-zinc-800">
             {/* Navbar */}
@@ -36,13 +39,18 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     <div className="space-y-4">
                         <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 px-3">Top Categories</h3>
                         <div className="space-y-1">
-                            {['Technology', 'Design', 'Development', 'General', 'Feedback'].map((cat) => (
+                            {categories.map((cat) => (
                                 <button
-                                    key={cat}
-                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg hover:bg-white dark:hover:bg-charcoal transition-colors group"
+                                    key={cat.id}
+                                    className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg hover:bg-white dark:hover:bg-charcoal transition-colors group"
                                 >
-                                    <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700 group-hover:bg-gold transition-colors" />
-                                    <span className="text-slate-600 dark:text-slate-400 group-hover:text-navy dark:group-hover:text-white">{cat}</span>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700 group-hover:bg-gold transition-colors" />
+                                        <span className="text-slate-600 dark:text-slate-400 group-hover:text-navy dark:group-hover:text-white">{cat.name}</span>
+                                    </div>
+                                    <span className="text-xs text-zinc-400 font-normal">
+                                        {cat._count.topics}
+                                    </span>
                                 </button>
                             ))}
                         </div>

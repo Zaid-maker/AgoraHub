@@ -1,78 +1,65 @@
 import MainLayout from "@/components/MainLayout";
 import CommentNode from "@/components/CommentNode";
+import { getTopicById } from "@/lib/actions";
+import { notFound } from "next/navigation";
 
-const MOCK_TOPIC_DETAIL = {
-    id: "1",
-    title: "How to handle large scale state in React 19?",
-    content: "I've been working on a massive enterprise application and we're starting to hit some performance bottlenecks with our current state management approach. We use a mix of Context and Prop drilling (I know, I know). \n\nWith React 19's focus on stability and performance, what are the best practices now? Should we look into signals, or is the new 'use' hook and server components enough to mitigate global state needs?",
-    author: "frontend_guru",
-    category: "Development",
-    timeAgo: "2 hours ago",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
-    comments: [
-        {
-            id: "c1",
-            author: "react_lover",
-            content: "React 19 doesn't fundamentally change how we should handle global state, but it does make some things easier. Personally, I think Zustand is still the way to go for most use cases.",
-            timeAgo: "1 hour ago",
-            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Moxie",
-            replies: [
-                {
-                    id: "c2",
-                    author: "frontend_guru",
-                    content: "Do you find Zustand handles complex derived state well? We have a lot of inter-dependent state slices.",
-                    timeAgo: "45 mins ago",
-                    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix",
-                    replies: [
-                        {
-                            id: "c3",
-                            author: "react_lover",
-                            content: "It does! You can use selectors to compute derived state. It's very efficient because it only triggers re-renders for the specific components using that slice.",
-                            timeAgo: "30 mins ago",
-                            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Moxie",
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            id: "c4",
-            author: "signal_fan",
-            content: "Have you tried looking into Preact-style signals? There are some great libraries that bring that mental model to React. It completely bypasses the virtual DOM diffing for state updates.",
-            timeAgo: "50 mins ago",
-            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Toby",
-        }
-    ]
-};
+export default async function TopicPage({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const topic = await getTopicById(id);
 
-export default function TopicPage() {
+    if (!topic) {
+        notFound();
+    }
+
+    const topicDetail = {
+        ...topic,
+        category: topic.category.name,
+        timeAgo: new Date(topic.createdAt).toLocaleDateString(),
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${topic.author}`,
+        comments: topic.comments.map(c => ({
+            ...c,
+            timeAgo: new Date(c.createdAt).toLocaleDateString(),
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.author}`,
+            replies: c.replies.map(r => ({
+                ...r,
+                timeAgo: new Date(r.createdAt).toLocaleDateString(),
+                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author}`,
+                replies: r.replies.map(rr => ({
+                    ...rr,
+                    timeAgo: new Date(rr.createdAt).toLocaleDateString(),
+                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${rr.author}`,
+                }))
+            }))
+        }))
+    };
+
     return (
         <MainLayout>
             <div className="max-w-4xl mx-auto">
                 <div className="mb-8">
                     <div className="flex items-center gap-3 mb-4">
                         <span className="text-xs font-bold px-3 py-1 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-black">
-                            {MOCK_TOPIC_DETAIL.category}
+                            {topicDetail.category}
                         </span>
-                        <span className="text-sm text-zinc-500">{MOCK_TOPIC_DETAIL.timeAgo}</span>
+                        <span className="text-sm text-zinc-500">{topicDetail.timeAgo}</span>
                     </div>
 
                     <h1 className="text-4xl font-black tracking-tight mb-6 leading-tight">
-                        {MOCK_TOPIC_DETAIL.title}
+                        {topicDetail.title}
                     </h1>
 
                     <div className="flex items-center gap-3 mb-8 pb-8 border-b border-zinc-200 dark:border-zinc-800">
                         <div className="w-10 h-10 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-                            <img src={MOCK_TOPIC_DETAIL.avatar} alt={MOCK_TOPIC_DETAIL.author} className="w-full h-full object-cover" />
+                            <img src={topicDetail.avatar} alt={topicDetail.author} className="w-full h-full object-cover" />
                         </div>
                         <div>
-                            <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{MOCK_TOPIC_DETAIL.author}</div>
+                            <div className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{topicDetail.author}</div>
                             <div className="text-xs text-zinc-500 italic">Author</div>
                         </div>
                     </div>
 
                     <div className="prose dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 text-lg leading-relaxed mb-12">
-                        {MOCK_TOPIC_DETAIL.content.split('\n\n').map((paragraph, i) => (
+                        {topicDetail.content.split('\n\n').map((paragraph, i) => (
                             <p key={i} className="mb-4">{paragraph}</p>
                         ))}
                     </div>
@@ -87,9 +74,13 @@ export default function TopicPage() {
                     </div>
 
                     <div className="space-y-6">
-                        {MOCK_TOPIC_DETAIL.comments.map((comment) => (
-                            <CommentNode key={comment.id} comment={comment} />
-                        ))}
+                        {topicDetail.comments.length > 0 ? (
+                            topicDetail.comments.map((comment) => (
+                                <CommentNode key={comment.id} comment={comment as any} />
+                            ))
+                        ) : (
+                            <p className="text-zinc-500 text-center py-8">No comments yet. Start the conversation!</p>
+                        )}
                     </div>
                 </section>
             </div>
