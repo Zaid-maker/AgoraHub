@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { voteTopic, voteComment } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { pusherClient } from "@/lib/pusher";
 
 interface VoteControlProps {
     id: string;
@@ -17,6 +18,26 @@ export default function VoteControl({ id, type, initialVotes, initialUserVote, t
     const [votes, setVotes] = useState(initialVotes);
     const [userVote, setUserVote] = useState(initialUserVote);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const channelName = type === 'topic' ? `topic-${id}` : `topic-${topicId}`;
+        if (!channelName || (type === 'comment' && !topicId)) return;
+
+        pusherClient.subscribe(channelName);
+
+        const handleVoteUpdate = (data: { id: string, type: string, votes: number }) => {
+            if (data.id === id && data.type === type) {
+                setVotes(data.votes);
+            }
+        };
+
+        pusherClient.bind('new-vote', handleVoteUpdate);
+
+        return () => {
+            pusherClient.unbind('new-vote', handleVoteUpdate);
+            pusherClient.unsubscribe(channelName);
+        };
+    }, [id, type, topicId]);
 
     async function handleVote(value: number) {
         if (loading) return;

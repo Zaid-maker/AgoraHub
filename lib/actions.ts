@@ -5,6 +5,7 @@ import slugify from 'slugify';
 import { revalidatePath } from 'next/cache';
 import { auth } from './auth';
 import { headers } from 'next/headers';
+import { pusherServer } from './pusher';
 
 export async function getCategories() {
     return await prisma.category.findMany({
@@ -133,6 +134,17 @@ export async function voteTopic(topicId: string, value: number) {
         });
     }
 
+    const votes = await prisma.vote.aggregate({
+        where: { topicId },
+        _sum: { value: true }
+    });
+
+    await pusherServer.trigger(`topic-${topicId}`, 'new-vote', {
+        id: topicId,
+        type: 'topic',
+        votes: votes._sum.value || 0
+    });
+
     revalidatePath(`/`);
     revalidatePath(`/topic/${topicId}`);
 }
@@ -171,6 +183,17 @@ export async function voteComment(commentId: string, value: number, topicId: str
             }
         });
     }
+
+    const votes = await prisma.vote.aggregate({
+        where: { commentId },
+        _sum: { value: true }
+    });
+
+    await pusherServer.trigger(`topic-${topicId}`, 'new-vote', {
+        id: commentId,
+        type: 'comment',
+        votes: votes._sum.value || 0
+    });
 
     revalidatePath(`/topic/${topicId}`);
 }
@@ -219,11 +242,27 @@ export async function createComment(formData: FormData) {
             topicId,
             parentId: parentId || null,
             authorId: session.user.id
+        },
+        include: {
+            author: true
         }
     });
 
+    const commentWithData = {
+        ...comment,
+        author: comment.author.name,
+        authorId: comment.authorId,
+        timeAgo: new Date(comment.createdAt).toLocaleDateString(),
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.author.name}`,
+        voteCount: 0,
+        userVote: 0,
+        replies: []
+    };
+
+    await pusherServer.trigger(`topic-${topicId}`, 'new-comment', commentWithData);
+
     revalidatePath(`/topic/${topicId}`);
-    return comment;
+    return commentWithData;
 }
 
 export async function seedData() {

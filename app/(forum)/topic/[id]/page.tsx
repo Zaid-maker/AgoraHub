@@ -1,5 +1,5 @@
 import Link from "next/link";
-import CommentNode from "@/components/CommentNode";
+import CommentsSection from "@/components/CommentsSection";
 import { getTopicById } from "@/lib/actions";
 import { notFound } from "next/navigation";
 import VoteControl from "@/components/VoteControl";
@@ -102,13 +102,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
                     </div>
 
                     <div className="space-y-6 mb-12">
-                        {topicDetail.comments.length > 0 ? (
-                            topicDetail.comments.map((comment) => (
-                                <CommentNode key={comment.id} comment={comment as any} />
-                            ))
-                        ) : (
-                            <p className="text-zinc-500 text-center py-8">No comments yet. Start the conversation!</p>
-                        )}
+                        <CommentsSection topicId={id} initialComments={topicDetail.comments} />
                     </div>
 
                     <div className="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800">
