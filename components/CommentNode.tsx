@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import VoteControl from './VoteControl';
 import { useParams } from 'next/navigation';
+import CommentForm from './CommentForm';
+import { authClient } from '@/lib/auth-client';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface Comment {
     id: string;
@@ -25,8 +29,20 @@ interface CommentNodeProps {
 
 export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
     const [isExpanded, setIsExpanded] = useState(true);
+    const [isReplying, setIsReplying] = useState(false);
     const params = useParams();
     const topicId = params.id as string;
+    const { data: session } = authClient.useSession();
+
+    const handleReplyClick = () => {
+        if (!session) {
+            toast.error("Sign in required", {
+                description: "You must be part of the legend to reply."
+            });
+            return;
+        }
+        setIsReplying(!isReplying);
+    };
 
     return (
         <div className={`mt-4 ${depth > 0 ? 'ml-6 pl-4 border-l border-white/5 dark:border-slate-800' : ''}`}>
@@ -59,7 +75,12 @@ export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
                     </div>
 
                     <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
-                        <button className="hover:text-gold transition-colors uppercase tracking-widest">Reply</button>
+                        <button
+                            onClick={handleReplyClick}
+                            className={cn("hover:text-gold transition-colors uppercase tracking-widest", isReplying && "text-gold")}
+                        >
+                            {isReplying ? 'Cancel' : 'Reply'}
+                        </button>
                         {comment.replies && comment.replies.length > 0 && (
                             <button
                                 onClick={() => setIsExpanded(!isExpanded)}
@@ -69,6 +90,18 @@ export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
                             </button>
                         )}
                     </div>
+
+                    {isReplying && (
+                        <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <CommentForm
+                                topicId={topicId}
+                                parentId={comment.id}
+                                autoFocus
+                                placeholder={`Replying to ${comment.author}...`}
+                                onSuccess={() => setIsReplying(false)}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 

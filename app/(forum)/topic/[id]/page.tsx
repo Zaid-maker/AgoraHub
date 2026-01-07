@@ -4,6 +4,9 @@ import { getTopicById } from "@/lib/actions";
 import { notFound } from "next/navigation";
 import VoteControl from "@/components/VoteControl";
 import SidebarWrapper from "@/components/SidebarWrapper";
+import CommentForm from "@/components/CommentForm";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export default async function TopicPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -42,6 +45,10 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
             }))
         }))
     };
+
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
 
     return (
         <SidebarWrapper>
@@ -83,7 +90,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
                     </div>
 
                     <div className="prose dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 text-lg leading-relaxed mb-12">
-                        {topicDetail.content.split('\n\n').map((paragraph, i) => (
+                        {topicDetail.content.split('\n\n').map((paragraph: string, i: number) => (
                             <p key={i} className="mb-4">{paragraph}</p>
                         ))}
                     </div>
@@ -92,18 +99,32 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
                 <section className="pt-8 border-t border-zinc-200 dark:border-zinc-800">
                     <div className="flex items-center justify-between mb-8">
                         <h2 className="text-2xl font-bold tracking-tight">Discussion</h2>
-                        <button className="h-9 px-5 bg-gold hover:bg-gold-hover text-navy rounded-full text-sm font-bold shadow-sm transition-all">
-                            Post Reply
-                        </button>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-6 mb-12">
                         {topicDetail.comments.length > 0 ? (
                             topicDetail.comments.map((comment) => (
                                 <CommentNode key={comment.id} comment={comment as any} />
                             ))
                         ) : (
                             <p className="text-zinc-500 text-center py-8">No comments yet. Start the conversation!</p>
+                        )}
+                    </div>
+
+                    <div className="mt-12 pt-12 border-t border-zinc-100 dark:border-zinc-800">
+                        <h3 className="text-xl font-bold mb-6">Your Contribution</h3>
+                        {session ? (
+                            <CommentForm topicId={id} />
+                        ) : (
+                            <div className="p-10 rounded-[2.5rem] bg-slate-50 dark:bg-slate-900/50 border border-dashed border-slate-200 dark:border-slate-800 text-center">
+                                <p className="text-slate-500 mb-6 italic font-serif">You must be part of the legend to contribute to this discussion.</p>
+                                <Link
+                                    href="/sign-in"
+                                    className="inline-flex items-center h-12 px-8 bg-navy text-white dark:bg-gold dark:text-navy font-black rounded-2xl uppercase tracking-widest text-xs transition-all hover:scale-105 active:scale-95"
+                                >
+                                    Sign In to Reply
+                                </Link>
+                            </div>
                         )}
                     </div>
                 </section>
