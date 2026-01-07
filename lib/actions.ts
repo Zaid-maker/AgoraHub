@@ -293,6 +293,50 @@ export async function createComment(formData: FormData) {
     return commentWithData;
 }
 
+export async function deleteComment(commentId: string, topicId: string) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) {
+        throw new Error("Unauthorized");
+    }
+
+    const comment = await prisma.comment.findUnique({
+        where: { id: commentId }
+    });
+
+    if (!comment) throw new Error("Comment not found");
+
+    if (comment.authorId !== session.user.id) {
+        throw new Error("You can only delete your own comments");
+    }
+
+    const updatedComment = await prisma.comment.update({
+        where: { id: commentId },
+        data: { isDeleted: true },
+        include: { author: true }
+    });
+
+    const commentData = {
+        ...updatedComment,
+        author: updatedComment.author.name,
+        authorId: updatedComment.authorId,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${updatedComment.author.name}`,
+        timeAgo: new Date(updatedComment.createdAt).toLocaleDateString(),
+        // Vote counts might ideally be preserved or reset? User didn't specify. Keeping them is easier for now.
+        // Actually I don't need to return vote count if client just updates the 'isDeleted' flag.
+    };
+
+    await pusherServer.trigger(`topic-${topicId}`, 'comment-updated', {
+        id: commentId,
+        isDeleted: true
+    });
+
+    revalidatePath(`/topic/${topicId}`);
+    return { success: true };
+}
+
 export async function seedData() {
     // 1. Seed User
     const user = await prisma.user.upsert({

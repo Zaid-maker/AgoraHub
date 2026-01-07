@@ -38,6 +38,7 @@ model Comment {
   authorId  String
   author    User      @relation(fields: [authorId], references: [id])
   votes     Vote[]
+  isDeleted Boolean   @default(false)
 }
 
 model User {

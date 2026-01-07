@@ -42,10 +42,29 @@ export default function CommentsSection({ topicId, initialComments }: CommentsSe
             });
         };
 
+        const handleCommentUpdate = (updatedData: { id: string, isDeleted: boolean }) => {
+            setComments((prev) => {
+                const updateNode = (nodes: any[]): any[] => {
+                    return nodes.map(node => {
+                        if (node.id === updatedData.id) {
+                            return { ...node, ...updatedData };
+                        }
+                        if (node.replies) {
+                            return { ...node, replies: updateNode(node.replies) };
+                        }
+                        return node;
+                    });
+                };
+                return updateNode(prev);
+            });
+        };
+
         pusherClient.bind('new-comment', handleNewComment);
+        pusherClient.bind('comment-updated', handleCommentUpdate);
 
         return () => {
             pusherClient.unbind('new-comment', handleNewComment);
+            pusherClient.unbind('comment-updated', handleCommentUpdate);
             pusherClient.unsubscribe(`topic-${topicId}`);
         };
     }, [topicId]);
