@@ -20,6 +20,11 @@ export default function VoteControl({ id, type, initialVotes, initialUserVote, t
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        setVotes(initialVotes);
+        setUserVote(initialUserVote);
+    }, [initialVotes, initialUserVote]);
+
+    useEffect(() => {
         const channelName = type === 'topic' ? `topic-${id}` : `topic-${topicId}`;
         if (!channelName || (type === 'comment' && !topicId)) return;
 

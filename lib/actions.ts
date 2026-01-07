@@ -67,7 +67,31 @@ export async function getTopicById(id: string) {
                             replies: {
                                 include: {
                                     author: true,
-                                    votes: true
+                                    votes: true,
+                                    replies: {
+                                        include: {
+                                            author: true,
+                                            votes: true,
+                                            replies: {
+                                                include: {
+                                                    author: true,
+                                                    votes: true,
+                                                    replies: {
+                                                        include: {
+                                                            author: true,
+                                                            votes: true,
+                                                            replies: {
+                                                                include: {
+                                                                    author: true,
+                                                                    votes: true
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
