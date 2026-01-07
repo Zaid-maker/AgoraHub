@@ -108,6 +108,10 @@ export async function getTopicById(id: string) {
 
     const processComment = (c: any): any => ({
         ...c,
+        author: c.author.name,
+        authorId: c.authorId,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.author.name}`,
+        timeAgo: new Date(c.createdAt).toLocaleDateString(),
         voteCount: c.votes.reduce((acc: number, v: any) => acc + v.value, 0),
         userVote: c.votes.find((v: any) => v.userId === session?.user.id)?.value || 0,
         replies: c.replies?.map(processComment)

@@ -22,28 +22,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
         authorId: topic.authorId,
         category: topic.category.name,
         timeAgo: new Date(topic.createdAt).toLocaleDateString(),
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${topic.author.name}`,
-        comments: topic.comments.map(c => ({
-            ...c,
-            author: c.author.name,
-            authorId: c.authorId,
-            timeAgo: new Date(c.createdAt).toLocaleDateString(),
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.author.name}`,
-            replies: c.replies.map((r: any) => ({
-                ...r,
-                author: r.author.name,
-                authorId: r.authorId,
-                timeAgo: new Date(r.createdAt).toLocaleDateString(),
-                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${r.author.name}`,
-                replies: r.replies.map((rr: any) => ({
-                    ...rr,
-                    author: rr.author.name,
-                    authorId: rr.authorId,
-                    timeAgo: new Date(rr.createdAt).toLocaleDateString(),
-                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${rr.author.name}`,
-                }))
-            }))
-        }))
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${topic.author.name}`
     };
 
     const session = await auth.api.getSession({
