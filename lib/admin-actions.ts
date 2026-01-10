@@ -28,12 +28,34 @@ export async function getUsers() {
     });
 }
 
+/**
+ * Updates the specified user's role and performs related cleanup when a user is banned.
+ *
+ * If `role` is `"banned"`, all sessions for that user are deleted and the admin users page cache is revalidated.
+ *
+ * @param userId - The ID of the user to update
+ * @param role - The new role to assign (for example: `"admin"`, `"user"`, `"banned"`)
+ * @returns The updated user record as stored in the database
+ */
 export async function updateUserRole(userId: string, role: string) {
     await checkAdmin();
-    const updated = await prisma.user.update({
-        where: { id: userId },
-        data: { role }
+
+    const result = await prisma.$transaction(async (tx) => {
+        const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: { role }
+        });
+
+        if (role === "banned") {
+            const deleteResult = await tx.session.deleteMany({
+                where: { userId }
+            });
+            console.log(`Revoked ${deleteResult.count} session(s) for banned user: ${userId}`);
+        }
+
+        return updatedUser;
     });
+
     revalidatePath("/admin/users");
-    return updated;
+    return result;
 }

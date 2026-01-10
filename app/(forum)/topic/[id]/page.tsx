@@ -8,6 +8,14 @@ import CommentForm from "@/components/CommentForm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
+/**
+ * Render the topic page for a given topic id.
+ *
+ * Loads the topic and session, then renders topic details (category, title, author, avatar, time), voting controls, content (hidden if the author is banned), discussion comments, and a contribution area or sign-in prompt.
+ *
+ * @param params - A promise that resolves to an object containing the route `id` string for the topic
+ * @returns The page's React element containing the topic detail layout, discussion, and contribution UI
+ */
 export default async function TopicPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const topic = await getTopicById(id);
@@ -22,7 +30,8 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
         authorId: topic.authorId,
         category: topic.category.name,
         timeAgo: new Date(topic.createdAt).toLocaleDateString(),
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${topic.author.name}`
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${topic.author.name}`,
+        authorRole: topic.author.role
     };
 
     const session = await auth.api.getSession({
@@ -57,21 +66,29 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800">
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-2">Rate Topic</span>
-                            <VoteControl
-                                id={id}
-                                type="topic"
-                                initialVotes={topicDetail.voteCount}
-                                initialUserVote={topicDetail.userVote}
-                            />
-                        </div>
+                        {topicDetail.authorRole !== 'banned' && (
+                            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-2">Rate Topic</span>
+                                <VoteControl
+                                    id={id}
+                                    type="topic"
+                                    initialVotes={topicDetail.voteCount}
+                                    initialUserVote={topicDetail.userVote}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="prose dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 text-lg leading-relaxed mb-12">
-                        {topicDetail.content.split('\n\n').map((paragraph: string, i: number) => (
-                            <p key={i} className="mb-4">{paragraph}</p>
-                        ))}
+                        {topicDetail.authorRole === 'banned' ? (
+                            <div className="p-8 rounded-3xl bg-red-50/50 dark:bg-red-900/10 border border-red-100/50 dark:border-red-900/20 italic text-red-500/80 text-center">
+                                This content is hidden because the author has been banned.
+                            </div>
+                        ) : (
+                            (topicDetail.content || '').split('\n\n').map((paragraph: string, i: number) => (
+                                <p key={i} className="mb-4">{paragraph}</p>
+                            ))
+                        )}
                     </div>
                 </div>
 

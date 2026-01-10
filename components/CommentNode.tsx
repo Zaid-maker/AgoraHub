@@ -13,13 +13,14 @@ interface Comment {
     id: string;
     author: string;
     authorId: string;
-    content: string;
+    content: string | null;
     timeAgo: string;
     avatar: string;
     voteCount: number;
     userVote: number;
     replies?: Comment[];
     isDeleted?: boolean;
+    authorRole?: string;
 }
 
 import Link from 'next/link';
@@ -29,6 +30,17 @@ interface CommentNodeProps {
     depth?: number;
 }
 
+/**
+ * Render a single comment node including vote controls, author info, content, actions, and its nested replies.
+ *
+ * Renders different placeholders when the comment is deleted or the author is banned, shows reply/collapse controls,
+ * and conditionally displays an inline reply form. Nested replies are indented according to `depth` and are always
+ * rendered when expanded, even if the parent comment is deleted.
+ *
+ * @param comment - The comment object to render. May have `content` set to `null`; if `isDeleted` is true a deleted placeholder is shown; if `authorRole === 'banned'` a hidden-by-ban placeholder is shown.
+ * @param depth - The nesting level of this comment (used to indent and style replies). Defaults to 0.
+ * @returns The rendered comment node element.
+ */
 export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isReplying, setIsReplying] = useState(false);
@@ -52,6 +64,10 @@ export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
                 {comment.isDeleted ? (
                     <div className="flex-1 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 italic text-slate-500 text-sm">
                         Original comment deleted by post author
+                    </div>
+                ) : comment.authorRole === 'banned' ? (
+                    <div className="flex-1 p-4 rounded-xl bg-red-50/50 dark:bg-red-900/10 border border-red-100/50 dark:border-red-900/20 italic text-red-500/80 text-sm">
+                        This content is hidden because the author has been banned.
                     </div>
                 ) : (
                     <>

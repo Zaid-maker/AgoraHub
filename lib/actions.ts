@@ -7,6 +7,23 @@ import { auth } from './auth';
 import { headers } from 'next/headers';
 import { pusherServer } from './pusher';
 
+/**
+ * Prevents banned users from performing actions by validating the session.
+ *
+ * @param session - The current user session object (may be `null`). Expected shape: `{ user?: { role?: string | null } }`.
+ * @throws Error with message "Your account has been banned. You cannot perform this action." when `session.user.role` is `'banned'`.
+ */
+function verifyNotBanned(session: { user?: { role?: string | null } } | null) {
+    if (session?.user?.role === 'banned') {
+        throw new Error("Your account has been banned. You cannot perform this action.");
+    }
+}
+
+/**
+ * Fetches all categories including a count of topics for each category.
+ *
+ * @returns An array of category records where each item includes a `_count` object with `topics` indicating the number of topics in that category.
+ */
 export async function getCategories() {
     return await prisma.category.findMany({
         include: {
@@ -44,6 +61,14 @@ export async function getTopics(categoryId?: string) {
     }));
 }
 
+/**
+ * Fetches a topic by id and returns a presentation-ready object with aggregated vote data, user-specific vote, author role, and processed nested comments.
+ *
+ * The returned topic includes: `authorRole`, `voteCount` (sum of vote values), `userVote` (current session user's vote or 0), and `comments` where each comment and its nested replies include `author`, `authorId`, `authorRole`, `avatar`, `timeAgo`, `voteCount`, `userVote`, and `replies`. If a topic's or comment author's role is `'banned'`, that item's `content` is returned as `null`.
+ *
+ * @param id - The topic's unique identifier
+ * @returns The transformed topic object with aggregated fields and processed comments, or `null` if no topic with the given `id` exists
+ */
 export async function getTopicById(id: string) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -108,8 +133,10 @@ export async function getTopicById(id: string) {
 
     const processComment = (c: any): any => ({
         ...c,
+        content: c.author.role === 'banned' ? null : c.content,
         author: c.author.name,
         authorId: c.authorId,
+        authorRole: c.author.role,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.author.name}`,
         timeAgo: new Date(c.createdAt).toLocaleDateString(),
         voteCount: c.votes.reduce((acc: number, v: any) => acc + v.value, 0),
@@ -119,18 +146,31 @@ export async function getTopicById(id: string) {
 
     return {
         ...topic,
+        content: topic.author.role === 'banned' ? null : topic.content,
+        authorRole: topic.author.role,
         voteCount: topic.votes.reduce((acc, v) => acc + v.value, 0),
         userVote: topic.votes.find(v => v.userId === session?.user.id)?.value || 0,
         comments: topic.comments.map(processComment)
     };
 }
 
+/**
+ * Toggle or set the current user's vote on a topic, update the aggregated vote count, and notify clients.
+ *
+ * If the user has an existing vote with the same value the vote is removed; if the value differs the vote is updated; if no vote exists a new one is created. Afterward the topic's vote total is aggregated, a real-time update is emitted, and relevant pages are revalidated.
+ *
+ * @param topicId - The ID of the topic to vote on
+ * @param value - The vote value to apply (typically `1` for upvote or `-1` for downvote)
+ * @throws Error - "Unauthorized" if there is no active session
+ * @throws Error - If the user's account is banned (message: "Your account has been banned. You cannot perform this action.")
+ */
 export async function voteTopic(topicId: string, value: number) {
     const session = await auth.api.getSession({
         headers: await headers(),
     });
 
     if (!session) throw new Error("Unauthorized");
+    verifyNotBanned(session);
 
     const existingVote = await prisma.vote.findUnique({
         where: {
@@ -177,12 +217,24 @@ export async function voteTopic(topicId: string, value: number) {
     revalidatePath(`/topic/${topicId}`);
 }
 
+/**
+ * Casts, updates, or toggles the current user's vote on a comment and notifies listeners.
+ *
+ * Toggles the user's existing vote if the same value is submitted, updates it if different, or creates a new vote if none exists; after updating the database it emits a real-time `new-vote` event for the comment on the topic channel and revalidates the topic page.
+ *
+ * @param commentId - The ID of the comment to vote on
+ * @param value - The vote value (use `1` for upvote, `-1` for downvote)
+ * @param topicId - The ID of the topic containing the comment (used for event channel and revalidation)
+ * @throws Error - If there is no authenticated session ("Unauthorized")
+ * @throws Error - If the current user is banned (message: "Your account has been banned. You cannot perform this action.")
+ */
 export async function voteComment(commentId: string, value: number, topicId: string) {
     const session = await auth.api.getSession({
         headers: await headers(),
     });
 
     if (!session) throw new Error("Unauthorized");
+    verifyNotBanned(session);
 
     const existingVote = await prisma.vote.findUnique({
         where: {
@@ -225,6 +277,14 @@ export async function voteComment(commentId: string, value: number, topicId: str
 
     revalidatePath(`/topic/${topicId}`);
 }
+/**
+ * Creates a new topic from submitted form data and returns the created topic.
+ *
+ * @param formData - FormData containing 'title', 'content', and 'categoryId' fields.
+ * @returns The newly created topic record.
+ * @throws Error - If the user is not authenticated ("Unauthorized").
+ * @throws Error - If the user's account is banned ("Your account has been banned. You cannot perform this action.").
+ */
 export async function createTopic(formData: FormData) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -233,6 +293,8 @@ export async function createTopic(formData: FormData) {
     if (!session) {
         throw new Error('Unauthorized');
     }
+
+    verifyNotBanned(session);
 
     const title = formData.get('title') as string;
     const content = formData.get('content') as string;
@@ -251,6 +313,14 @@ export async function createTopic(formData: FormData) {
     return topic;
 }
 
+/**
+ * Creates a new comment for a topic (optionally as a reply) and broadcasts it in real time.
+ *
+ * @param formData - FormData containing `content` (string), `topicId` (string), and optional `parentId` (string or null)
+ * @returns The created comment object augmented with `author` (name), `authorId`, `timeAgo`, `avatar`, `voteCount` (0), `userVote` (0), and `replies` (empty array)
+ * @throws Error - "Unauthorized" if there is no active session
+ * @throws Error - "Your account has been banned. You cannot perform this action." if the current user is banned
+ */
 export async function createComment(formData: FormData) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -259,6 +329,8 @@ export async function createComment(formData: FormData) {
     if (!session) {
         throw new Error('Unauthorized');
     }
+
+    verifyNotBanned(session);
 
     const content = formData.get('content') as string;
     const topicId = formData.get('topicId') as string;
@@ -293,6 +365,16 @@ export async function createComment(formData: FormData) {
     return commentWithData;
 }
 
+/**
+ * Marks a comment as deleted (soft delete) when performed by the comment's author, notifies subscribers, and revalidates the topic page.
+ *
+ * @param commentId - The ID of the comment to mark as deleted.
+ * @param topicId - The ID of the parent topic used for broadcasting the update and revalidating the topic page.
+ * @throws "Unauthorized" when there is no authenticated session.
+ * @throws "Comment not found" when no comment exists with the given `commentId`.
+ * @throws "You can only delete your own comments" when the current user is not the comment's author.
+ * @returns An object with `success: true` if the comment was successfully marked as deleted.
+ */
 export async function deleteComment(commentId: string, topicId: string) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -301,6 +383,8 @@ export async function deleteComment(commentId: string, topicId: string) {
     if (!session) {
         throw new Error("Unauthorized");
     }
+
+    verifyNotBanned(session);
 
     const comment = await prisma.comment.findUnique({
         where: { id: commentId }
@@ -467,6 +551,18 @@ export async function getUserProfile(identifier: string) {
     };
 }
 
+/**
+ * Updates the current user's profile using values from the provided form data.
+ *
+ * @param formData - FormData containing the fields:
+ *   - "name": the user's display name
+ *   - "username": desired username (optional; checked for uniqueness when changed)
+ *   - "bio": the user's profile biography
+ * @returns An object `{ success: true }` when the profile was updated successfully
+ * @throws Error "Unauthorized" when there is no authenticated session
+ * @throws Error "Username already taken" when the requested username is already in use
+ * @throws Error "Your account has been banned. You cannot perform this action." when the current user is banned
+ */
 export async function updateProfile(formData: FormData) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -475,6 +571,8 @@ export async function updateProfile(formData: FormData) {
     if (!session) {
         throw new Error("Unauthorized");
     }
+
+    verifyNotBanned(session);
 
     const name = formData.get("name") as string;
     const username = formData.get("username") as string;
