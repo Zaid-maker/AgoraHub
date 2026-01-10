@@ -20,6 +20,7 @@ interface Comment {
     userVote: number;
     replies?: Comment[];
     isDeleted?: boolean;
+    authorRole?: string;
 }
 
 import Link from 'next/link';
@@ -52,6 +53,10 @@ export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
                 {comment.isDeleted ? (
                     <div className="flex-1 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 italic text-slate-500 text-sm">
                         Original comment deleted by post author
+                    </div>
+                ) : comment.authorRole === 'banned' ? (
+                    <div className="flex-1 p-4 rounded-xl bg-red-50/50 dark:bg-red-900/10 border border-red-100/50 dark:border-red-900/20 italic text-red-500/80 text-sm">
+                        This content is hidden because the author has been banned.
                     </div>
                 ) : (
                     <>

@@ -7,6 +7,12 @@ import { auth } from './auth';
 import { headers } from 'next/headers';
 import { pusherServer } from './pusher';
 
+function verifyNotBanned(session: any) {
+    if (session?.user && (session.user as any).role === 'banned') {
+        throw new Error("Your account has been banned. You cannot perform this action.");
+    }
+}
+
 export async function getCategories() {
     return await prisma.category.findMany({
         include: {
@@ -110,6 +116,7 @@ export async function getTopicById(id: string) {
         ...c,
         author: c.author.name,
         authorId: c.authorId,
+        authorRole: c.author.role,
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${c.author.name}`,
         timeAgo: new Date(c.createdAt).toLocaleDateString(),
         voteCount: c.votes.reduce((acc: number, v: any) => acc + v.value, 0),
@@ -131,6 +138,7 @@ export async function voteTopic(topicId: string, value: number) {
     });
 
     if (!session) throw new Error("Unauthorized");
+    verifyNotBanned(session);
 
     const existingVote = await prisma.vote.findUnique({
         where: {
@@ -183,6 +191,7 @@ export async function voteComment(commentId: string, value: number, topicId: str
     });
 
     if (!session) throw new Error("Unauthorized");
+    verifyNotBanned(session);
 
     const existingVote = await prisma.vote.findUnique({
         where: {
@@ -234,6 +243,8 @@ export async function createTopic(formData: FormData) {
         throw new Error('Unauthorized');
     }
 
+    verifyNotBanned(session);
+
     const title = formData.get('title') as string;
     const content = formData.get('content') as string;
     const categoryId = formData.get('categoryId') as string;
@@ -259,6 +270,8 @@ export async function createComment(formData: FormData) {
     if (!session) {
         throw new Error('Unauthorized');
     }
+
+    verifyNotBanned(session);
 
     const content = formData.get('content') as string;
     const topicId = formData.get('topicId') as string;
@@ -301,6 +314,8 @@ export async function deleteComment(commentId: string, topicId: string) {
     if (!session) {
         throw new Error("Unauthorized");
     }
+
+    verifyNotBanned(session);
 
     const comment = await prisma.comment.findUnique({
         where: { id: commentId }
@@ -475,6 +490,8 @@ export async function updateProfile(formData: FormData) {
     if (!session) {
         throw new Error("Unauthorized");
     }
+
+    verifyNotBanned(session);
 
     const name = formData.get("name") as string;
     const username = formData.get("username") as string;

@@ -48,6 +48,21 @@ export const auth = betterAuth({
                     };
                 }
             }
+        },
+        session: {
+            create: {
+                before: async (session) => {
+                    const user = await prisma.user.findUnique({
+                        where: { id: session.userId }
+                    });
+                    if (user?.role === "banned") {
+                        throw new Error("Your account has been banned.");
+                    }
+                    return {
+                        data: session
+                    };
+                }
+            }
         }
     }
 });
