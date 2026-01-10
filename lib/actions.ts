@@ -7,8 +7,8 @@ import { auth } from './auth';
 import { headers } from 'next/headers';
 import { pusherServer } from './pusher';
 
-function verifyNotBanned(session: any) {
-    if (session?.user && (session.user as any).role === 'banned') {
+function verifyNotBanned(session: { user?: { role?: string | null } } | null) {
+    if (session?.user?.role === 'banned') {
         throw new Error("Your account has been banned. You cannot perform this action.");
     }
 }
@@ -114,6 +114,7 @@ export async function getTopicById(id: string) {
 
     const processComment = (c: any): any => ({
         ...c,
+        content: c.author.role === 'banned' ? null : c.content,
         author: c.author.name,
         authorId: c.authorId,
         authorRole: c.author.role,
@@ -126,6 +127,8 @@ export async function getTopicById(id: string) {
 
     return {
         ...topic,
+        content: topic.author.role === 'banned' ? null : topic.content,
+        authorRole: topic.author.role,
         voteCount: topic.votes.reduce((acc, v) => acc + v.value, 0),
         userVote: topic.votes.find(v => v.userId === session?.user.id)?.value || 0,
         comments: topic.comments.map(processComment)

@@ -77,7 +77,7 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
                                 This content is hidden because the author has been banned.
                             </div>
                         ) : (
-                            topicDetail.content.split('\n\n').map((paragraph: string, i: number) => (
+                            (topicDetail.content || '').split('\n\n').map((paragraph: string, i: number) => (
                                 <p key={i} className="mb-4">{paragraph}</p>
                             ))
                         )}

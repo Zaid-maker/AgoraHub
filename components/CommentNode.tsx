@@ -13,7 +13,7 @@ interface Comment {
     id: string;
     author: string;
     authorId: string;
-    content: string;
+    content: string | null;
     timeAgo: string;
     avatar: string;
     voteCount: number;

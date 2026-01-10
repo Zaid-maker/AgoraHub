@@ -34,6 +34,19 @@ export async function updateUserRole(userId: string, role: string) {
         where: { id: userId },
         data: { role }
     });
+
+    if (role === "banned") {
+        try {
+            // Direct database revocation for immediate effect
+            await prisma.session.deleteMany({
+                where: { userId }
+            });
+            console.log(`Successfully revoked all sessions for banned user: ${userId}`);
+        } catch (error) {
+            console.error("Failed to revoke sessions during ban:", error);
+        }
+    }
+
     revalidatePath("/admin/users");
     return updated;
 }
