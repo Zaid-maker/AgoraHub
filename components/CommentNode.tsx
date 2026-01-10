@@ -30,6 +30,15 @@ interface CommentNodeProps {
     depth?: number;
 }
 
+/**
+ * Renders a comment node with voting, author/avatar, actions, reply form, and nested replies.
+ *
+ * Handles three visual states for the comment: deleted (shows deletion notice), banned author (shows hidden-content notice), and normal (full comment UI). Replying requires an authenticated session; attempting to reply when not signed in triggers an error toast. Nested replies are rendered recursively and remain visible even if the parent comment is deleted.
+ *
+ * @param comment - The comment data to render, including metadata, votes, and child replies.
+ * @param depth - Depth of this comment in the thread (used for indentation); defaults to 0.
+ * @returns The rendered comment node element with its nested replies.
+ */
 export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isReplying, setIsReplying] = useState(false);

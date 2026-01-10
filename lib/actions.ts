@@ -7,12 +7,23 @@ import { auth } from './auth';
 import { headers } from 'next/headers';
 import { pusherServer } from './pusher';
 
+/**
+ * Aborts processing when the provided session corresponds to a banned user.
+ *
+ * @param session - Session object that may contain `user` and `user.role`
+ * @throws Error with message "Your account has been banned. You cannot perform this action." when `session.user.role === 'banned'`
+ */
 function verifyNotBanned(session: any) {
     if (session?.user && (session.user as any).role === 'banned') {
         throw new Error("Your account has been banned. You cannot perform this action.");
     }
 }
 
+/**
+ * Fetches all categories including a count of associated topics.
+ *
+ * @returns An array of category objects where each object includes a `_count` property with the number of `topics`
+ */
 export async function getCategories() {
     return await prisma.category.findMany({
         include: {
@@ -50,6 +61,25 @@ export async function getTopics(categoryId?: string) {
     }));
 }
 
+/**
+ * Fetches a topic by its ID, including category, author, votes, and nested comments, and returns the topic augmented with per-entity vote summaries and session-aware user vote values.
+ *
+ * The returned topic includes:
+ * - `voteCount`: sum of vote values for the topic
+ * - `userVote`: the current session user's vote value for the topic (or `0` if none)
+ * - `comments`: top-level comments ordered by creation date, each transformed to include:
+ *   - `author`: author's name
+ *   - `authorId`: author's id
+ *   - `authorRole`: author's role
+ *   - `avatar`: generated avatar URL based on author name
+ *   - `timeAgo`: formatted creation date
+ *   - `voteCount`: sum of vote values for the comment
+ *   - `userVote`: the current session user's vote value for the comment (or `0` if none)
+ *   - `replies`: recursively processed replies with the same shape
+ *
+ * @param id - The topic's unique identifier
+ * @returns The transformed topic object with aggregated vote fields and processed comments, or `null` if no topic is found
+ */
 export async function getTopicById(id: string) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -132,6 +162,16 @@ export async function getTopicById(id: string) {
     };
 }
 
+/**
+ * Registers or toggles the current user's vote on a topic and publishes the updated vote total.
+ *
+ * Updates, creates, or removes the authenticated user's vote for the given topic id, emits a real-time update with the new total votes, and triggers revalidation for the home and topic pages.
+ *
+ * @param topicId - The id of the topic to vote on
+ * @param value - The vote value (typically `1` for upvote or `-1` for downvote)
+ * @throws Error - If the user is not authenticated ("Unauthorized")
+ * @throws Error - If the current user is banned (verification enforces ban restriction)
+ */
 export async function voteTopic(topicId: string, value: number) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -185,6 +225,15 @@ export async function voteTopic(topicId: string, value: number) {
     revalidatePath(`/topic/${topicId}`);
 }
 
+/**
+ * Toggle or set the current user's vote on a comment and broadcast the updated vote total.
+ *
+ * @param commentId - ID of the comment to vote on
+ * @param value - Vote value (typically `1` for upvote or `-1` for downvote)
+ * @param topicId - ID of the topic containing the comment (used for notifications and revalidation)
+ * @throws "Unauthorized" if there is no authenticated session
+ * @throws If the current user is banned
+ */
 export async function voteComment(commentId: string, value: number, topicId: string) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -234,6 +283,15 @@ export async function voteComment(commentId: string, value: number, topicId: str
 
     revalidatePath(`/topic/${topicId}`);
 }
+/**
+ * Create a new topic from form data and associate it with the authenticated user.
+ *
+ * @param formData - FormData containing `title`, `content`, and `categoryId` for the new topic
+ * @returns The created topic record
+ * @throws Error If there is no authenticated session ("Unauthorized")
+ * @throws Error If the current user is banned
+ * @remarks Triggers revalidation of the home page path (`/`)
+ */
 export async function createTopic(formData: FormData) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -262,6 +320,27 @@ export async function createTopic(formData: FormData) {
     return topic;
 }
 
+/**
+ * Creates a new comment for a topic and broadcasts it in real time.
+ *
+ * Accepts FormData containing `content`, `topicId`, and optional `parentId`, creates the comment with the current authenticated user as author, triggers a Pusher "new-comment" event for the topic, revalidates the topic page, and returns the created comment augmented with presentation fields.
+ *
+ * @param formData - Form data with keys:
+ *   - `content`: comment text
+ *   - `topicId`: ID of the topic the comment belongs to
+ *   - `parentId` (optional): ID of a parent comment for replies
+ * @returns The created comment augmented with:
+ *   - `author`: author's name
+ *   - `authorId`: author's user id
+ *   - `timeAgo`: formatted creation date
+ *   - `avatar`: generated avatar URL
+ *   - `voteCount`: initial vote total (`0`)
+ *   - `userVote`: current user's vote on the comment (`0`)
+ *   - `replies`: empty array
+ *
+ * @throws Error with message "Unauthorized" if there is no authenticated session.
+ * @throws Error if the current user is banned (via internal ban check).
+ */
 export async function createComment(formData: FormData) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -306,6 +385,16 @@ export async function createComment(formData: FormData) {
     return commentWithData;
 }
 
+/**
+ * Marks a comment as deleted if the current authenticated user is its author and not banned.
+ *
+ * @param commentId - ID of the comment to mark as deleted
+ * @param topicId - ID of the topic containing the comment (used to publish updates and revalidate the topic page)
+ * @returns An object with `success: true` when deletion is applied
+ * @throws Error "Unauthorized" if no authenticated session is present
+ * @throws Error "Comment not found" if the comment does not exist
+ * @throws Error "You can only delete your own comments" if the current user is not the comment's author
+ */
 export async function deleteComment(commentId: string, topicId: string) {
     const session = await auth.api.getSession({
         headers: await headers(),
@@ -482,6 +571,15 @@ export async function getUserProfile(identifier: string) {
     };
 }
 
+/**
+ * Updates the current authenticated user's profile fields: name, username, and bio.
+ *
+ * @param formData - FormData with keys "name", "username", and "bio". If "username" is empty, the stored username will be cleared (set to null).
+ * @returns An object `{ success: true }` when the update completes successfully.
+ * @throws "Unauthorized" if there is no authenticated session.
+ * @throws "Username already taken" if the requested username is already used by another account.
+ * @throws Error if the current user's account is banned.
+ */
 export async function updateProfile(formData: FormData) {
     const session = await auth.api.getSession({
         headers: await headers(),

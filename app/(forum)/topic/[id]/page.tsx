@@ -8,6 +8,14 @@ import CommentForm from "@/components/CommentForm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
+/**
+ * Render the full topic detail page for a given topic id.
+ *
+ * Fetches the topic by id and session information, triggers a 404 response if the topic does not exist, and returns the composed page UI that includes the topic header, author info, content (hidden if the author is banned), voting controls (hidden for banned authors), discussion comments, and a comment form or sign-in prompt depending on session state.
+ *
+ * @param params - An object whose `id` property is a Promise resolving to the topic id string
+ * @returns The topic detail page as a JSX element
+ */
 export default async function TopicPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const topic = await getTopicById(id);
