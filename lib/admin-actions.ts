@@ -59,3 +59,42 @@ export async function updateUserRole(userId: string, role: string) {
     revalidatePath("/admin/users");
     return result;
 }
+
+export async function getReports() {
+    await checkAdmin();
+    return prisma.report.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+            reporter: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    username: true
+                }
+            },
+            topic: {
+                select: {
+                    id: true,
+                    title: true
+                }
+            },
+            comment: {
+                select: {
+                    id: true,
+                    content: true
+                }
+            }
+        }
+    });
+}
+
+export async function updateReportStatus(reportId: string, status: string) {
+    await checkAdmin();
+    const updatedReport = await prisma.report.update({
+        where: { id: reportId },
+        data: { status }
+    });
+    revalidatePath("/admin/reports");
+    return updatedReport;
+}

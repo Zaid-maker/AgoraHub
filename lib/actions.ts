@@ -421,6 +421,60 @@ export async function deleteComment(commentId: string, topicId: string) {
     return { success: true };
 }
 
+/**
+ * Creates a report for a topic.
+ *
+ * @param topicId - The ID of the topic being reported
+ * @param reason - The reason for reporting the topic
+ * @returns An object with `success: true` if the report was created
+ * @throws Error - "Unauthorized" if there is no active session
+ */
+export async function reportTopic(topicId: string, reason: string) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) throw new Error("Unauthorized");
+    verifyNotBanned(session);
+
+    await prisma.report.create({
+        data: {
+            topicId,
+            reason,
+            reporterId: session.user.id,
+        }
+    });
+
+    return { success: true };
+}
+
+/**
+ * Creates a report for a comment.
+ *
+ * @param commentId - The ID of the comment being reported
+ * @param reason - The reason for reporting the comment
+ * @returns An object with `success: true` if the report was created
+ * @throws Error - "Unauthorized" if there is no active session
+ */
+export async function reportComment(commentId: string, reason: string) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) throw new Error("Unauthorized");
+    verifyNotBanned(session);
+
+    await prisma.report.create({
+        data: {
+            commentId,
+            reason,
+            reporterId: session.user.id,
+        }
+    });
+
+    return { success: true };
+}
+
 export async function seedData() {
     // 1. Seed User
     const user = await prisma.user.upsert({
