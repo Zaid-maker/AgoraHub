@@ -28,6 +28,15 @@ export async function getUsers() {
     });
 }
 
+/**
+ * Updates the specified user's role and performs related cleanup when a user is banned.
+ *
+ * If `role` is `"banned"`, all sessions for that user are deleted and the admin users page cache is revalidated.
+ *
+ * @param userId - The ID of the user to update
+ * @param role - The new role to assign (for example: `"admin"`, `"user"`, `"banned"`)
+ * @returns The updated user record as stored in the database
+ */
 export async function updateUserRole(userId: string, role: string) {
     await checkAdmin();
 

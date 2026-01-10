@@ -30,6 +30,17 @@ interface CommentNodeProps {
     depth?: number;
 }
 
+/**
+ * Render a single comment node including vote controls, author info, content, actions, and its nested replies.
+ *
+ * Renders different placeholders when the comment is deleted or the author is banned, shows reply/collapse controls,
+ * and conditionally displays an inline reply form. Nested replies are indented according to `depth` and are always
+ * rendered when expanded, even if the parent comment is deleted.
+ *
+ * @param comment - The comment object to render. May have `content` set to `null`; if `isDeleted` is true a deleted placeholder is shown; if `authorRole === 'banned'` a hidden-by-ban placeholder is shown.
+ * @param depth - The nesting level of this comment (used to indent and style replies). Defaults to 0.
+ * @returns The rendered comment node element.
+ */
 export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isReplying, setIsReplying] = useState(false);

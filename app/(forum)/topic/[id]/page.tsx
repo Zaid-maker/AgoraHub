@@ -8,6 +8,14 @@ import CommentForm from "@/components/CommentForm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
+/**
+ * Render the topic page for a given topic id.
+ *
+ * Loads the topic and session, then renders topic details (category, title, author, avatar, time), voting controls, content (hidden if the author is banned), discussion comments, and a contribution area or sign-in prompt.
+ *
+ * @param params - A promise that resolves to an object containing the route `id` string for the topic
+ * @returns The page's React element containing the topic detail layout, discussion, and contribution UI
+ */
 export default async function TopicPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const topic = await getTopicById(id);
