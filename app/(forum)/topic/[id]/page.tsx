@@ -7,6 +7,7 @@ import SidebarWrapper from "@/components/SidebarWrapper";
 import CommentForm from "@/components/CommentForm";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import ReportModal from "@/components/ReportModal";
 
 /**
  * Render the topic page for a given topic id.
@@ -67,14 +68,22 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
                         </div>
 
                         {topicDetail.authorRole !== 'banned' && (
-                            <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-2">Rate Topic</span>
-                                <VoteControl
-                                    id={id}
-                                    type="topic"
-                                    initialVotes={topicDetail.voteCount}
-                                    initialUserVote={topicDetail.userVote}
-                                />
+                            <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-900 px-6 py-2 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-2">Rate</span>
+                                    <VoteControl
+                                        id={id}
+                                        type="topic"
+                                        initialVotes={topicDetail.voteCount}
+                                        initialUserVote={topicDetail.userVote}
+                                    />
+                                </div>
+
+                                {session && (
+                                    <div className="border-l border-slate-200 dark:border-slate-700 pl-4">
+                                        <ReportModal targetId={id} type="topic" />
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

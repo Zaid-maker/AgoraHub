@@ -421,6 +421,104 @@ export async function deleteComment(commentId: string, topicId: string) {
     return { success: true };
 }
 
+/**
+ * Creates a report for a topic.
+ *
+ * @param topicId - The ID of the topic being reported
+ * @param reason - The reason for reporting the topic
+ * @returns An object with `success: true` if the report was created
+ * @throws Error - "Unauthorized" if there is no active session
+ * @throws Error - "Reason is required" if reason is empty after trimming
+ * @throws Error - "Topic not found" if the topic does not exist
+ */
+export async function reportTopic(topicId: string, reason: string) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) throw new Error("Unauthorized");
+    verifyNotBanned(session);
+
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) throw new Error("Reason is required");
+
+    const topic = await prisma.topic.findUnique({
+        where: { id: topicId }
+    });
+    if (!topic) throw new Error("Topic not found");
+
+    // Deduplication
+    const existingReport = await prisma.report.findFirst({
+        where: {
+            reporterId: session.user.id,
+            topicId
+        }
+    });
+
+    if (existingReport) {
+        return { success: true, alreadyReported: true };
+    }
+
+    await prisma.report.create({
+        data: {
+            topicId,
+            reason: trimmedReason,
+            reporterId: session.user.id,
+        }
+    });
+
+    return { success: true };
+}
+
+/**
+ * Creates a report for a comment.
+ *
+ * @param commentId - The ID of the comment being reported
+ * @param reason - The reason for reporting the comment
+ * @returns An object with `success: true` if the report was created
+ * @throws Error - "Unauthorized" if there is no active session
+ * @throws Error - "Reason is required" if reason is empty after trimming
+ * @throws Error - "Comment not found" if the comment does not exist
+ */
+export async function reportComment(commentId: string, reason: string) {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) throw new Error("Unauthorized");
+    verifyNotBanned(session);
+
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) throw new Error("Reason is required");
+
+    const comment = await prisma.comment.findUnique({
+        where: { id: commentId }
+    });
+    if (!comment) throw new Error("Comment not found");
+
+    // Deduplication
+    const existingReport = await prisma.report.findFirst({
+        where: {
+            reporterId: session.user.id,
+            commentId
+        }
+    });
+
+    if (existingReport) {
+        return { success: true, alreadyReported: true };
+    }
+
+    await prisma.report.create({
+        data: {
+            commentId,
+            reason: trimmedReason,
+            reporterId: session.user.id,
+        }
+    });
+
+    return { success: true };
+}
+
 export async function seedData() {
     // 1. Seed User
     const user = await prisma.user.upsert({

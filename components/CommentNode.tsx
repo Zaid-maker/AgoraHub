@@ -8,6 +8,7 @@ import CommentActions from './CommentActions';
 import { authClient } from '@/lib/auth-client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import ReportModal from './ReportModal';
 
 interface Comment {
     id: string;
@@ -108,6 +109,11 @@ export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
                                 >
                                     {isReplying ? 'Cancel' : 'Reply'}
                                 </button>
+
+                                {session && (
+                                    <ReportModal targetId={comment.id} type="comment" />
+                                )}
+
                                 {comment.replies && comment.replies.length > 0 && (
                                     <button
                                         onClick={() => setIsExpanded(!isExpanded)}
