@@ -39,8 +39,13 @@ export async function getTopics(categoryId?: string) {
         headers: await headers(),
     });
 
+    const isAdmin = (session?.user as any)?.role === 'admin';
+
     const topics = await prisma.topic.findMany({
-        where: categoryId ? { categoryId } : {},
+        where: {
+            ...(categoryId ? { categoryId } : {}),
+            ...(isAdmin ? {} : { moderated: false })
+        },
         include: {
             category: true,
             author: true,
@@ -133,7 +138,7 @@ export async function getTopicById(id: string) {
 
     const processComment = (c: any): any => ({
         ...c,
-        content: c.author.role === 'banned' ? null : c.content,
+        content: (c.author.role === 'banned' || c.moderated) ? null : c.content,
         author: c.author.name,
         authorId: c.authorId,
         authorRole: c.author.role,
@@ -141,16 +146,18 @@ export async function getTopicById(id: string) {
         timeAgo: new Date(c.createdAt).toLocaleDateString(),
         voteCount: c.votes.reduce((acc: number, v: any) => acc + v.value, 0),
         userVote: c.votes.find((v: any) => v.userId === session?.user.id)?.value || 0,
-        replies: c.replies?.map(processComment)
+        replies: c.replies?.map(processComment),
+        moderated: c.moderated
     });
 
     return {
         ...topic,
-        content: topic.author.role === 'banned' ? null : topic.content,
+        content: (topic.author.role === 'banned' || topic.moderated) ? null : topic.content,
         authorRole: topic.author.role,
         voteCount: topic.votes.reduce((acc, v) => acc + v.value, 0),
         userVote: topic.votes.find(v => v.userId === session?.user.id)?.value || 0,
-        comments: topic.comments.map(processComment)
+        comments: topic.comments.map(processComment),
+        moderated: topic.moderated
     };
 }
 

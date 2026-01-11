@@ -76,13 +76,15 @@ export async function getReports() {
             topic: {
                 select: {
                     id: true,
-                    title: true
+                    title: true,
+                    moderated: true
                 }
             },
             comment: {
                 select: {
                     id: true,
-                    content: true
+                    content: true,
+                    moderated: true
                 }
             }
         }
@@ -91,10 +93,50 @@ export async function getReports() {
 
 export async function updateReportStatus(reportId: string, status: string) {
     await checkAdmin();
-    const updatedReport = await prisma.report.update({
-        where: { id: reportId },
-        data: { status }
+    const result = await prisma.$transaction(async (tx) => {
+        const report = await tx.report.update({
+            where: { id: reportId },
+            data: { status },
+            include: {
+                topic: { select: { id: true } },
+                comment: { select: { id: true, topicId: true } }
+            }
+        });
+
+        if (status === "resolved") {
+            if (report.topicId) {
+                await tx.topic.update({
+                    where: { id: report.topicId },
+                    data: { moderated: true }
+                });
+            } else if (report.commentId) {
+                await tx.comment.update({
+                    where: { id: report.commentId },
+                    data: { moderated: true }
+                });
+            }
+        } else if (status === "pending" || status === "dismissed") {
+            if (report.topicId) {
+                await tx.topic.update({
+                    where: { id: report.topicId },
+                    data: { moderated: false }
+                });
+            } else if (report.commentId) {
+                await tx.comment.update({
+                    where: { id: report.commentId },
+                    data: { moderated: false }
+                });
+            }
+        }
+        return report;
     });
+
     revalidatePath("/admin/reports");
-    return updatedReport;
+    if (result.topicId) {
+        revalidatePath(`/topic/${result.topicId}`);
+    } else if (result.comment && result.comment.topicId) {
+        revalidatePath(`/topic/${result.comment.topicId}`);
+    }
+
+    return result;
 }

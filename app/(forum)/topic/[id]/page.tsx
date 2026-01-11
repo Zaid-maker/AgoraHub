@@ -39,6 +39,35 @@ export default async function TopicPage({ params }: { params: Promise<{ id: stri
         headers: await headers(),
     });
 
+    if (topicDetail.moderated) {
+        return (
+            <SidebarWrapper>
+                <div className="max-w-4xl mx-auto py-20 text-center">
+                    <div className="p-12 rounded-[2.5rem] bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100/50 dark:border-amber-900/20 shadow-sm animate-in fade-in zoom-in duration-500">
+                        <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 text-amber-600">
+                            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <h1 className="text-2xl font-black text-amber-900 dark:text-amber-100 mb-4">Topic Moderated</h1>
+                        <p className="max-w-md mx-auto text-amber-800/70 dark:text-amber-200/60 font-medium leading-relaxed italic">
+                            This topic has been removed for violating AgoraHub community guidelines.
+                            Our team has reviewed the reports and taken appropriate action.
+                        </p>
+                        <div className="mt-8">
+                            <Link
+                                href="/"
+                                className="inline-flex items-center h-10 px-6 bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-100 font-bold rounded-xl text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95"
+                            >
+                                Back to Forum
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </SidebarWrapper>
+        );
+    }
+
     return (
         <SidebarWrapper>
             <div className="max-w-4xl mx-auto">

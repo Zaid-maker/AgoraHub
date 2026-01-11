@@ -9,6 +9,7 @@ import { authClient } from '@/lib/auth-client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import ReportModal from './ReportModal';
+import Link from 'next/link';
 
 interface Comment {
     id: string;
@@ -22,9 +23,8 @@ interface Comment {
     replies?: Comment[];
     isDeleted?: boolean;
     authorRole?: string;
+    moderated?: boolean;
 }
-
-import Link from 'next/link';
 
 interface CommentNodeProps {
     comment: Comment;
@@ -34,11 +34,11 @@ interface CommentNodeProps {
 /**
  * Render a single comment node including vote controls, author info, content, actions, and its nested replies.
  *
- * Renders different placeholders when the comment is deleted or the author is banned, shows reply/collapse controls,
+ * Renders different placeholders when the comment is deleted, moderated, or the author is banned, shows reply/collapse controls,
  * and conditionally displays an inline reply form. Nested replies are indented according to `depth` and are always
  * rendered when expanded, even if the parent comment is deleted.
  *
- * @param comment - The comment object to render. May have `content` set to `null`; if `isDeleted` is true a deleted placeholder is shown; if `authorRole === 'banned'` a hidden-by-ban placeholder is shown.
+ * @param comment - The comment object to render. May have `content` set to `null`; if `isDeleted` is true a deleted placeholder is shown; if `authorRole === 'banned'` a hidden-by-ban placeholder is shown; if `moderated` is true a moderation placeholder is shown.
  * @param depth - The nesting level of this comment (used to indent and style replies). Defaults to 0.
  * @returns The rendered comment node element.
  */
@@ -65,6 +65,13 @@ export default function CommentNode({ comment, depth = 0 }: CommentNodeProps) {
                 {comment.isDeleted ? (
                     <div className="flex-1 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 italic text-slate-500 text-sm">
                         Original comment deleted by post author
+                    </div>
+                ) : comment.moderated ? (
+                    <div className="flex-1 p-4 rounded-xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100/50 dark:border-amber-900/20 italic text-amber-600/80 text-sm flex items-center gap-2">
+                        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        This comment has been removed by moderators for rule violations.
                     </div>
                 ) : comment.authorRole === 'banned' ? (
                     <div className="flex-1 p-4 rounded-xl bg-red-50/50 dark:bg-red-900/10 border border-red-100/50 dark:border-red-900/20 italic text-red-500/80 text-sm">

@@ -25,6 +25,7 @@ model Topic {
   comments   Comment[]
   votes      Vote[]
   reports    Report[]
+  moderated  Boolean   @default(false)
 }
 
 model Comment {
@@ -41,6 +42,7 @@ model Comment {
   votes     Vote[]
   isDeleted Boolean   @default(false)
   reports   Report[]
+  moderated Boolean   @default(false)
 }
 
 model User {
