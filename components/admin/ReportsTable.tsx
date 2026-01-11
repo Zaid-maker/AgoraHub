@@ -26,14 +26,22 @@ interface Report {
 }
 
 export default function ReportsTable({ reports }: { reports: Report[] }) {
+    const [localReports, setLocalReports] = useState<Report[]>(reports);
     const [loadingId, setLoadingId] = useState<string | null>(null);
 
     const handleStatusChange = async (reportId: string, newStatus: string) => {
+        const previousReports = [...localReports];
+        
+        // Optimistic update
+        setLocalReports(prev => prev.map(r => r.id === reportId ? { ...r, status: newStatus } : r));
         setLoadingId(reportId);
+
         try {
             await updateReportStatus(reportId, newStatus);
             toast.success("Report status updated");
         } catch (error) {
+            // Rollback on error
+            setLocalReports(previousReports);
             toast.error("Failed to update status");
         } finally {
             setLoadingId(null);
@@ -55,7 +63,7 @@ export default function ReportsTable({ reports }: { reports: Report[] }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                        {reports.map((report) => (
+                        {localReports.map((report) => (
                             <tr key={report.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                 <td className="px-6 py-4">
                                     {report.topic ? (
@@ -116,7 +124,7 @@ export default function ReportsTable({ reports }: { reports: Report[] }) {
                         ))}
                     </tbody>
                 </table>
-                {reports.length === 0 && (
+                {localReports.length === 0 && (
                     <div className="p-12 text-center">
                         <p className="text-slate-500 font-medium">No reports found.</p>
                     </div>

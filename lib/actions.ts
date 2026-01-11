@@ -428,6 +428,8 @@ export async function deleteComment(commentId: string, topicId: string) {
  * @param reason - The reason for reporting the topic
  * @returns An object with `success: true` if the report was created
  * @throws Error - "Unauthorized" if there is no active session
+ * @throws Error - "Reason is required" if reason is empty after trimming
+ * @throws Error - "Topic not found" if the topic does not exist
  */
 export async function reportTopic(topicId: string, reason: string) {
     const session = await auth.api.getSession({
@@ -437,10 +439,30 @@ export async function reportTopic(topicId: string, reason: string) {
     if (!session) throw new Error("Unauthorized");
     verifyNotBanned(session);
 
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) throw new Error("Reason is required");
+
+    const topic = await prisma.topic.findUnique({
+        where: { id: topicId }
+    });
+    if (!topic) throw new Error("Topic not found");
+
+    // Deduplication
+    const existingReport = await prisma.report.findFirst({
+        where: {
+            reporterId: session.user.id,
+            topicId
+        }
+    });
+
+    if (existingReport) {
+        return { success: true, alreadyReported: true };
+    }
+
     await prisma.report.create({
         data: {
             topicId,
-            reason,
+            reason: trimmedReason,
             reporterId: session.user.id,
         }
     });
@@ -455,6 +477,8 @@ export async function reportTopic(topicId: string, reason: string) {
  * @param reason - The reason for reporting the comment
  * @returns An object with `success: true` if the report was created
  * @throws Error - "Unauthorized" if there is no active session
+ * @throws Error - "Reason is required" if reason is empty after trimming
+ * @throws Error - "Comment not found" if the comment does not exist
  */
 export async function reportComment(commentId: string, reason: string) {
     const session = await auth.api.getSession({
@@ -464,10 +488,30 @@ export async function reportComment(commentId: string, reason: string) {
     if (!session) throw new Error("Unauthorized");
     verifyNotBanned(session);
 
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) throw new Error("Reason is required");
+
+    const comment = await prisma.comment.findUnique({
+        where: { id: commentId }
+    });
+    if (!comment) throw new Error("Comment not found");
+
+    // Deduplication
+    const existingReport = await prisma.report.findFirst({
+        where: {
+            reporterId: session.user.id,
+            commentId
+        }
+    });
+
+    if (existingReport) {
+        return { success: true, alreadyReported: true };
+    }
+
     await prisma.report.create({
         data: {
             commentId,
-            reason,
+            reason: trimmedReason,
             reporterId: session.user.id,
         }
     });
