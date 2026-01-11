@@ -21,12 +21,21 @@ export default function ReportModal({ targetId, type, trigger }: ReportModalProp
 
         setIsSubmitting(true);
         try {
+            let result;
             if (type === "topic") {
-                await reportTopic(targetId, reason);
+                result = await reportTopic(targetId, reason);
             } else {
-                await reportComment(targetId, reason);
+                result = await reportComment(targetId, reason);
             }
-            toast.success("Report submitted successfully");
+
+            if (result?.alreadyReported) {
+                toast.info("You have already reported this content", {
+                    description: "Our moderators are already reviewing it."
+                });
+            } else {
+                toast.success("Report submitted successfully");
+            }
+
             setIsOpen(false);
             setReason("");
         } catch (error: any) {

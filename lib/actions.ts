@@ -447,15 +447,17 @@ export async function reportTopic(topicId: string, reason: string) {
     });
     if (!topic) throw new Error("Topic not found");
 
-    // Deduplication
-    const existingReport = await prisma.report.findFirst({
+    // Deduplication - only block if a 'pending' report from this user exists
+    const existingPendingReport = await prisma.report.findFirst({
         where: {
             reporterId: session.user.id,
-            topicId
+            topicId,
+            status: "pending"
         }
     });
 
-    if (existingReport) {
+    if (existingPendingReport) {
+        console.log(`[reportTopic] User ${session.user.id} already has a pending report for topic ${topicId}`);
         return { success: true, alreadyReported: true };
     }
 
@@ -467,6 +469,8 @@ export async function reportTopic(topicId: string, reason: string) {
         }
     });
 
+    console.log(`[reportTopic] Created new report for topic ${topicId} by user ${session.user.id}`);
+    revalidatePath("/admin/reports");
     return { success: true };
 }
 
@@ -496,15 +500,17 @@ export async function reportComment(commentId: string, reason: string) {
     });
     if (!comment) throw new Error("Comment not found");
 
-    // Deduplication
-    const existingReport = await prisma.report.findFirst({
+    // Deduplication - only block if a 'pending' report from this user exists
+    const existingPendingReport = await prisma.report.findFirst({
         where: {
             reporterId: session.user.id,
-            commentId
+            commentId,
+            status: "pending"
         }
     });
 
-    if (existingReport) {
+    if (existingPendingReport) {
+        console.log(`[reportComment] User ${session.user.id} already has a pending report for comment ${commentId}`);
         return { success: true, alreadyReported: true };
     }
 
@@ -516,6 +522,8 @@ export async function reportComment(commentId: string, reason: string) {
         }
     });
 
+    console.log(`[reportComment] Created new report for comment ${commentId} by user ${session.user.id}`);
+    revalidatePath("/admin/reports");
     return { success: true };
 }
 
