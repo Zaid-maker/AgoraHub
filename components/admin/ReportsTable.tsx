@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { updateReportStatus } from "@/lib/admin-actions";
 import Link from "next/link";
@@ -29,9 +29,14 @@ export default function ReportsTable({ reports }: { reports: Report[] }) {
     const [localReports, setLocalReports] = useState<Report[]>(reports);
     const [loadingId, setLoadingId] = useState<string | null>(null);
 
+    // Sync with prop updates
+    useEffect(() => {
+        setLocalReports(reports);
+    }, [reports]);
+
     const handleStatusChange = async (reportId: string, newStatus: string) => {
         const previousReports = [...localReports];
-        
+
         // Optimistic update
         setLocalReports(prev => prev.map(r => r.id === reportId ? { ...r, status: newStatus } : r));
         setLoadingId(reportId);
