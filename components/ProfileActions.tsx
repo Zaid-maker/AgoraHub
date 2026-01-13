@@ -9,6 +9,7 @@ interface ProfileActionsProps {
         name: string;
         username?: string | null;
         bio?: string | null;
+        bannerImage?: string | null;
     };
 }
 

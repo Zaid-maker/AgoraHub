@@ -690,6 +690,7 @@ export async function updateProfile(formData: FormData) {
     const name = formData.get("name") as string;
     const username = formData.get("username") as string;
     const bio = formData.get("bio") as string;
+    const bannerImage = formData.get("bannerImage") as string;
 
     // Check if username is taken if it's changing
     if (username && username !== (session.user as any).username) {
@@ -706,7 +707,8 @@ export async function updateProfile(formData: FormData) {
         data: {
             name,
             username: username || null,
-            bio
+            bio,
+            bannerImage
         }
     });
 

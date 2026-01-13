@@ -11,6 +11,7 @@ interface EditProfileModalProps {
         name: string;
         username?: string | null;
         bio?: string | null;
+        bannerImage?: string | null;
     };
     onClose: () => void;
 }
@@ -75,6 +76,17 @@ export default function EditProfileModal({ user, onClose }: EditProfileModalProp
                             />
                         </div>
                         <p className="text-[10px] text-slate-500 mt-2 italic font-medium px-2">Used for your public profile link: /profile/username</p>
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-black text-gold uppercase tracking-widest block mb-2">Banner Image URL</label>
+                        <input
+                            name="bannerImage"
+                            defaultValue={user.bannerImage || ""}
+                            className="w-full h-14 px-6 rounded-2xl bg-slate-100 dark:bg-slate-800 border-2 border-transparent focus:border-gold/50 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all font-bold text-slate-900 dark:text-white"
+                            placeholder="https://example.com/banner.jpg"
+                        />
+                        <p className="text-[10px] text-slate-500 mt-2 italic font-medium px-2">Provide a URL for your profile banner. High-resolution landscapes work best.</p>
                     </div>
 
                     <div>
