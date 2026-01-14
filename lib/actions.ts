@@ -692,6 +692,25 @@ export async function updateProfile(formData: FormData) {
     const bio = formData.get("bio") as string;
     const bannerImage = formData.get("bannerImage") as string;
 
+    let validatedBannerImage: string | null = null;
+    if (bannerImage && bannerImage.trim()) {
+        const trimmedBanner = bannerImage.trim();
+        if (trimmedBanner.length > 1024) {
+            throw new Error("Banner URL is too long (max 1024 characters)");
+        }
+
+        try {
+            const url = new URL(trimmedBanner);
+            if (url.protocol !== "http:" && url.protocol !== "https:") {
+                throw new Error("Invalid URL scheme. Only http:// and https:// are allowed.");
+            }
+            validatedBannerImage = trimmedBanner;
+        } catch (e: any) {
+            if (e.message?.includes("Only http")) throw e;
+            throw new Error("Invalid Banner URL format");
+        }
+    }
+
     // Check if username is taken if it's changing
     if (username && username !== (session.user as any).username) {
         const existing = await prisma.user.findUnique({
@@ -708,7 +727,7 @@ export async function updateProfile(formData: FormData) {
             name,
             username: username || null,
             bio,
-            bannerImage
+            bannerImage: validatedBannerImage
         }
     });
 
