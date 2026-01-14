@@ -33,8 +33,19 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         <div className="max-w-5xl mx-auto py-10">
             {/* Profile Header */}
             <div className="relative mb-20">
-                <div className="h-48 rounded-[3rem] bg-gradient-to-r from-navy to-zinc-900 border border-white/5 overflow-hidden">
-                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
+                <div className="h-64 rounded-[3rem] bg-gradient-to-r from-navy to-zinc-900 border border-white/5 overflow-hidden shadow-2xl relative">
+                    {profile.bannerImage ? (
+                        <>
+                            <img
+                                src={profile.bannerImage}
+                                alt="Profile Banner"
+                                className="w-full h-full object-cover transition-opacity duration-500"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-navy/60 via-transparent to-transparent" />
+                        </>
+                    ) : (
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
+                    )}
                 </div>
 
                 <div className="absolute -bottom-16 left-12 flex items-end gap-8">
