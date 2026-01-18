@@ -45,11 +45,16 @@ export default function Paywall() {
         setLoadingId(productId);
         try {
             const checkoutUrl = await createCheckout(productId);
+            if (!checkoutUrl) {
+                toast.error("Failed to start checkout. Please try again.");
+                console.error("createCheckout returned an empty URL for product:", productId);
+                setLoadingId(null);
+                return;
+            }
             window.location.href = checkoutUrl;
         } catch (err: any) {
             toast.error(err.message || "Failed to start checkout. Check your console for details.");
             console.error(err);
-        } finally {
             setLoadingId(null);
         }
     };
