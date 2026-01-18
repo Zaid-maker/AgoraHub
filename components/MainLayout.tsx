@@ -3,14 +3,21 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import UserNav from './UserNav';
 import CreateTopicButton from './CreateTopicButton';
+import { getSubscriptionStatus } from '@/lib/actions';
+import Paywall from './Paywall';
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
     const session = await auth.api.getSession({
         headers: await headers(),
     });
 
+    const subStatus = await getSubscriptionStatus();
+
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-[#020617] text-zinc-900 dark:text-zinc-50 selection:bg-gold/20">
+            {!subStatus.hasAccess && session && (
+                <Paywall />
+            )}
             {/* Navbar */}
             <nav className="sticky top-0 z-50 w-full glass border-b border-white/10 dark:border-slate-800/50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
@@ -48,7 +55,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
                         />
 
                         {session ? (
-                            <UserNav user={session.user} />
+                            <UserNav user={session.user} subscriptionStatus={subStatus} />
                         ) : (
                             <div className="flex items-center gap-2">
                                 <Link
