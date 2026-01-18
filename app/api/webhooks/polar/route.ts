@@ -1,4 +1,4 @@
-import { Webhooks } from "@polar-sh/nextjs/webhooks";
+import { Webhooks } from "@polar-sh/nextjs";
 import prisma from "@/lib/prisma";
 
 export const POST = Webhooks({

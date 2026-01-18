@@ -816,8 +816,8 @@ export async function createCheckout(productId: string) {
     if (!session) throw new Error("Unauthorized");
 
     try {
-        const result = await polar.checkouts.custom.create({
-            productId,
+        const result = await polar.checkouts.create({
+            products: [productId],
             successUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/profile/${(session.user as any).username || session.user.id}?checkout=success`,
             customerEmail: session.user.email,
             customerName: session.user.name,
