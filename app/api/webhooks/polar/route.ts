@@ -22,6 +22,10 @@ export const POST = Webhooks({
             const subscription = data as any;
             const userId = subscription.metadata?.userId;
 
+            if (!userId) {
+                console.warn(`[Polar Webhook] Missing userId in metadata for event ${type}. SubId: ${subscription.id}`);
+            }
+
             if (userId) {
                 try {
                     // Using updateMany to avoid exceptions if user is missing
@@ -42,6 +46,10 @@ export const POST = Webhooks({
         if (type === "subscription.revoked") {
             const subscription = data as any;
             const userId = subscription.metadata?.userId;
+
+            if (!userId) {
+                console.warn(`[Polar Webhook] Missing userId in metadata for revocation. SubId: ${subscription.id}`);
+            }
 
             if (userId) {
                 try {

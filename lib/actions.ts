@@ -809,6 +809,10 @@ export async function updateProfile(formData: FormData) {
  * @returns The checkout URL to redirect the user to.
  */
 export async function createCheckout(productId: string) {
+    if (!productId || typeof productId !== "string" || productId.length < 10) {
+        throw new Error("Invalid productId");
+    }
+
     const session = await auth.api.getSession({
         headers: await headers(),
     });
