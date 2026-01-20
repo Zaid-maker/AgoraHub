@@ -13,9 +13,15 @@ interface UserNavProps {
         image?: string | null;
         username?: string | null;
     };
+    subscriptionStatus: {
+        isActive: boolean;
+        isTrial: boolean;
+        daysLeft: number;
+        hasAccess: boolean;
+    };
 }
 
-export default function UserNav({ user }: UserNavProps) {
+export default function UserNav({ user, subscriptionStatus }: UserNavProps) {
     const router = useRouter();
 
     const handleSignOut = async () => {
@@ -43,7 +49,16 @@ export default function UserNav({ user }: UserNavProps) {
                     />
                 </div>
                 <div className="flex flex-col">
-                    <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black leading-none mb-1 group-hover:text-gold transition-colors">My Profile</span>
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black leading-none group-hover:text-gold transition-colors">My Profile</span>
+                        {subscriptionStatus.isActive ? (
+                            <span className="bg-gold/10 text-gold text-[8px] font-black px-1.5 py-0.5 rounded-full border border-gold/20 uppercase tracking-tighter">Pro</span>
+                        ) : subscriptionStatus.isTrial ? (
+                            <span className="bg-navy/10 dark:bg-slate-700 text-slate-500 text-[8px] font-black px-1.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-600 uppercase tracking-tighter">Trial ({subscriptionStatus.daysLeft}d)</span>
+                        ) : (
+                            <span className="bg-red-500/10 text-red-500 text-[8px] font-black px-1.5 py-0.5 rounded-full border border-red-500/20 uppercase tracking-tighter">Expired</span>
+                        )}
+                    </div>
                     <span className="text-sm font-black truncate max-w-[120px] dark:text-white leading-none capitalize">{user.name}</span>
                 </div>
             </Link>

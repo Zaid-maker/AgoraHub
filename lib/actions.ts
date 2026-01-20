@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from './auth';
 import { headers } from 'next/headers';
 import { pusherServer } from './pusher';
+import { polar } from './polar';
 
 /**
  * Prevents banned users from performing actions by validating the session.
@@ -16,6 +17,64 @@ import { pusherServer } from './pusher';
 function verifyNotBanned(session: { user?: { role?: string | null } } | null) {
     if (session?.user?.role === 'banned') {
         throw new Error("Your account has been banned. You cannot perform this action.");
+    }
+}
+
+/**
+ * Checks the current user's subscription and trial status.
+ *
+ * @returns An object containing:
+ *  - isActive: true if the user has an active Polar.sh subscription.
+ *  - isTrial: true if the user is within their 14-day free trial.
+ *  - daysLeft: number of days remaining in the trial.
+ *  - hasAccess: true if either isActive or isTrial is true.
+ */
+export async function getSubscriptionStatus() {
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) return { isActive: false, isTrial: false, daysLeft: 0, hasAccess: false };
+
+    // Admins always have access
+    if ((session.user as any).role === 'admin') {
+        return { isActive: true, isTrial: false, daysLeft: 0, hasAccess: true };
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { trialStartedAt: true, subscriptionStatus: true }
+    });
+
+    if (!user) return { isActive: false, isTrial: false, daysLeft: 0, hasAccess: false };
+
+    const isActive = user.subscriptionStatus === 'active';
+    const trialDays = 14;
+    const now = new Date();
+    const trialEnd = new Date(user.trialStartedAt);
+    trialEnd.setDate(trialEnd.getDate() + trialDays);
+
+    const isTrial = now < trialEnd;
+    const diffTime = trialEnd.getTime() - now.getTime();
+    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return {
+        isActive,
+        isTrial,
+        daysLeft: Math.max(0, daysLeft),
+        hasAccess: isActive || isTrial
+    };
+}
+
+/**
+ * Ensures the user has an active subscription or is within their trial period.
+ *
+ * @throws Error - if access is expired.
+ */
+async function verifyAccess() {
+    const status = await getSubscriptionStatus();
+    if (!status.hasAccess) {
+        throw new Error("Paywall: Your trial has expired. Upgrade to continue your legend.");
     }
 }
 
@@ -178,6 +237,7 @@ export async function voteTopic(topicId: string, value: number) {
 
     if (!session) throw new Error("Unauthorized");
     verifyNotBanned(session);
+    await verifyAccess();
 
     const existingVote = await prisma.vote.findUnique({
         where: {
@@ -242,6 +302,7 @@ export async function voteComment(commentId: string, value: number, topicId: str
 
     if (!session) throw new Error("Unauthorized");
     verifyNotBanned(session);
+    await verifyAccess();
 
     const existingVote = await prisma.vote.findUnique({
         where: {
@@ -302,6 +363,7 @@ export async function createTopic(formData: FormData) {
     }
 
     verifyNotBanned(session);
+    await verifyAccess();
 
     const title = formData.get('title') as string;
     const content = formData.get('content') as string;
@@ -338,6 +400,7 @@ export async function createComment(formData: FormData) {
     }
 
     verifyNotBanned(session);
+    await verifyAccess();
 
     const content = formData.get('content') as string;
     const topicId = formData.get('topicId') as string;
@@ -445,6 +508,7 @@ export async function reportTopic(topicId: string, reason: string) {
 
     if (!session) throw new Error("Unauthorized");
     verifyNotBanned(session);
+    await verifyAccess();
 
     const trimmedReason = reason.trim();
     if (!trimmedReason) throw new Error("Reason is required");
@@ -498,6 +562,7 @@ export async function reportComment(commentId: string, reason: string) {
 
     if (!session) throw new Error("Unauthorized");
     verifyNotBanned(session);
+    await verifyAccess();
 
     const trimmedReason = reason.trim();
     if (!trimmedReason) throw new Error("Reason is required");
@@ -735,4 +800,39 @@ export async function updateProfile(formData: FormData) {
     revalidatePath(`/profile/${(session.user as any).username || session.user.id}`);
 
     return { success: true };
+}
+
+/**
+ * Creates a Polar.sh checkout session for the given product.
+ *
+ * @param productId - The Polar.sh product ID to subscribe to.
+ * @returns The checkout URL to redirect the user to.
+ */
+export async function createCheckout(productId: string) {
+    if (!productId || typeof productId !== "string" || productId.length < 10) {
+        throw new Error("Invalid productId");
+    }
+
+    const session = await auth.api.getSession({
+        headers: await headers(),
+    });
+
+    if (!session) throw new Error("Unauthorized");
+
+    try {
+        const result = await polar.checkouts.create({
+            products: [productId],
+            successUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/profile/${(session.user as any).username || session.user.id}?checkout=success`,
+            customerEmail: session.user.email,
+            customerName: session.user.name,
+            metadata: {
+                userId: session.user.id
+            }
+        });
+
+        return result.url;
+    } catch (err: any) {
+        console.error("[Polar Checkout Error]", err);
+        throw new Error("Failed to initialize checkout. Please try again later.");
+    }
 }

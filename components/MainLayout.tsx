@@ -3,22 +3,32 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import UserNav from './UserNav';
 import CreateTopicButton from './CreateTopicButton';
+import { getSubscriptionStatus } from '@/lib/actions';
+import Paywall from './Paywall';
 
 export default async function MainLayout({ children }: { children: React.ReactNode }) {
     const session = await auth.api.getSession({
         headers: await headers(),
     });
 
+    const subStatus = await getSubscriptionStatus();
+
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-[#020617] text-zinc-900 dark:text-zinc-50 selection:bg-gold/20">
+            {!subStatus.hasAccess && session && (
+                <Paywall />
+            )}
             {/* Navbar */}
             <nav className="sticky top-0 z-50 w-full glass border-b border-white/10 dark:border-slate-800/50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-10">
                         <Link href="/" className="flex items-center gap-3 group">
-                            <div className="relative w-10 h-10 bg-[#0F172A] dark:bg-gold rounded-xl flex items-center justify-center overflow-hidden shadow-lg shadow-gold/10 group-hover:scale-105 transition-transform duration-300">
-                                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent" />
-                                <span className="text-white dark:text-navy font-black text-xl z-10">A</span>
+                            <div className="relative w-14 h-14 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-110">
+                                <img
+                                    src="/logo.png"
+                                    alt="Agora Hub Logo"
+                                    className="w-full h-full object-contain mix-blend-screen brightness-125"
+                                />
                             </div>
                             <div className="flex flex-col">
                                 <span className="font-black text-xl tracking-tight leading-none uppercase dark:text-white">Agora</span>
@@ -48,7 +58,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
                         />
 
                         {session ? (
-                            <UserNav user={session.user} />
+                            <UserNav user={session.user} subscriptionStatus={subStatus} />
                         ) : (
                             <div className="flex items-center gap-2">
                                 <Link
