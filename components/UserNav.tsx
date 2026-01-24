@@ -18,6 +18,7 @@ interface UserNavProps {
         isTrial: boolean;
         daysLeft: number;
         hasAccess: boolean;
+        status: string;
     };
 }
 
@@ -51,12 +52,14 @@ export default function UserNav({ user, subscriptionStatus }: UserNavProps) {
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] uppercase tracking-widest text-slate-500 font-black leading-none group-hover:text-gold transition-colors">My Profile</span>
-                        {subscriptionStatus.isActive ? (
-                            <span className="bg-gold/10 text-gold text-[8px] font-black px-1.5 py-0.5 rounded-full border border-gold/20 uppercase tracking-tighter">Pro</span>
+                        {subscriptionStatus.status === 'admin' ? (
+                            <span className="bg-gold/10 text-gold text-[10px] font-black px-2 py-0.5 rounded-full border border-gold/20 uppercase tracking-tight">Admin</span>
+                        ) : subscriptionStatus.isActive ? (
+                            <span className="bg-green-500/10 text-green-500 text-[10px] font-black px-2 py-0.5 rounded-full border border-green-500/20 uppercase tracking-tight">Pro</span>
                         ) : subscriptionStatus.isTrial ? (
-                            <span className="bg-navy/10 dark:bg-slate-700 text-slate-500 text-[8px] font-black px-1.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-600 uppercase tracking-tighter">Trial ({subscriptionStatus.daysLeft}d)</span>
+                            <span className="bg-blue-500/10 text-blue-500 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-500/20 uppercase tracking-tight">Trial ({subscriptionStatus.daysLeft}d)</span>
                         ) : (
-                            <span className="bg-red-500/10 text-red-500 text-[8px] font-black px-1.5 py-0.5 rounded-full border border-red-500/20 uppercase tracking-tighter">Expired</span>
+                            <span className="bg-red-500/10 text-red-500 text-[10px] font-black px-2 py-0.5 rounded-full border border-red-500/20 uppercase tracking-tight">Expired</span>
                         )}
                     </div>
                     <span className="text-sm font-black truncate max-w-[120px] dark:text-white leading-none capitalize">{user.name}</span>

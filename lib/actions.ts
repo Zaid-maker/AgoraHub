@@ -34,11 +34,13 @@ export async function getSubscriptionStatus() {
         headers: await headers(),
     });
 
-    if (!session) return { isActive: false, isTrial: false, daysLeft: 0, hasAccess: false };
+    if (!session) {
+        return { isActive: false, isTrial: false, daysLeft: 0, hasAccess: false, status: 'none' };
+    }
 
     // Admins always have access
     if ((session.user as any).role === 'admin') {
-        return { isActive: true, isTrial: false, daysLeft: 0, hasAccess: true };
+        return { isActive: true, isTrial: false, daysLeft: 0, hasAccess: true, status: 'admin' };
     }
 
     const user = await prisma.user.findUnique({
@@ -46,23 +48,33 @@ export async function getSubscriptionStatus() {
         select: { trialStartedAt: true, subscriptionStatus: true }
     });
 
-    if (!user) return { isActive: false, isTrial: false, daysLeft: 0, hasAccess: false };
+    if (!user) {
+        return { isActive: false, isTrial: false, daysLeft: 0, hasAccess: false, status: 'none' };
+    }
 
     const isActive = user.subscriptionStatus === 'active';
     const trialDays = 14;
     const now = new Date();
-    const trialEnd = new Date(user.trialStartedAt);
+
+    // Defensive check for trialStartedAt
+    const trialStart = user.trialStartedAt ? new Date(user.trialStartedAt) : new Date();
+    const trialEnd = new Date(trialStart);
     trialEnd.setDate(trialEnd.getDate() + trialDays);
 
     const isTrial = now < trialEnd;
     const diffTime = trialEnd.getTime() - now.getTime();
     const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
+    const status = isActive ? 'active' : (isTrial ? 'trialing' : (user.subscriptionStatus || 'expired'));
+
+    console.log(`[Subscription Status] User: ${session.user.id}, Active: ${isActive}, Trial: ${isTrial}, Days: ${daysLeft}, Status: ${status}`);
+
     return {
         isActive,
         isTrial,
         daysLeft: Math.max(0, daysLeft),
-        hasAccess: isActive || isTrial
+        hasAccess: isActive || isTrial,
+        status: status as string
     };
 }
 

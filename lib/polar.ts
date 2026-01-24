@@ -12,5 +12,5 @@ if (!accessToken) {
 
 export const polar = new Polar({
     accessToken: accessToken || "",
-    server: process.env.NODE_ENV === "development" ? "sandbox" : "production",
+    server: (process.env.POLAR_ENV as "sandbox" | "production") || (process.env.NODE_ENV === "development" ? "sandbox" : "production"),
 });
