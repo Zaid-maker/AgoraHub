@@ -52,9 +52,14 @@ export default function PricingGrid() {
                 return;
             }
             window.location.assign(checkoutUrl);
-        } catch (err: any) {
-            toast.error(err.message || "Failed to start checkout. Check your console for details.");
-            console.error(err);
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                toast.error(err.message);
+                console.error(err);
+            } else {
+                toast.error("Failed to start checkout. Check your console for details.");
+                console.error("Non-Error thrown in handleUpgrade:", err);
+            }
             setLoadingId(null);
         }
     };

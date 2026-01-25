@@ -39,7 +39,7 @@ export async function getSubscriptionStatus() {
     }
 
     // Admins always have access
-    if ((session.user as any).role === 'admin') {
+    if (session.user.role === 'admin') {
         return { isActive: true, isTrial: false, daysLeft: 0, hasAccess: true, status: 'admin' };
     }
 
@@ -72,7 +72,10 @@ export async function getSubscriptionStatus() {
 
     const status = isActive ? 'active' : (isTrial ? 'trialing' : (user.subscriptionStatus || 'expired'));
 
-    console.log(`[Subscription Status] User: ${session.user.id}, Active: ${isActive}, Trial: ${isTrial}, Days: ${daysLeft}, Status: ${status}`);
+    if (process.env.NODE_ENV !== 'production') {
+        const redactedId = session.user.id.substring(0, 4) + '...' + session.user.id.substring(session.user.id.length - 4);
+        console.log(`[Subscription Status] User: ${redactedId}, Active: ${isActive}, Trial: ${isTrial}, Days: ${daysLeft}, Status: ${status}`);
+    }
 
     return {
         isActive,
@@ -115,7 +118,7 @@ export async function getTopics(categoryId?: string) {
         headers: await headers(),
     });
 
-    const isAdmin = (session?.user as any)?.role === 'admin';
+    const isAdmin = session?.user.role === 'admin';
 
     const topics = await prisma.topic.findMany({
         where: {
