@@ -56,14 +56,19 @@ export async function getSubscriptionStatus() {
     const trialDays = 14;
     const now = new Date();
 
-    // Defensive check for trialStartedAt
-    const trialStart = user.trialStartedAt ? new Date(user.trialStartedAt) : new Date();
-    const trialEnd = new Date(trialStart);
-    trialEnd.setDate(trialEnd.getDate() + trialDays);
+    // Stricter logic: missing trialStartedAt means the trial is expired
+    let isTrial = false;
+    let daysLeft = 0;
 
-    const isTrial = now < trialEnd;
-    const diffTime = trialEnd.getTime() - now.getTime();
-    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (user.trialStartedAt) {
+        const trialStart = new Date(user.trialStartedAt);
+        const trialEnd = new Date(trialStart);
+        trialEnd.setDate(trialEnd.getDate() + trialDays);
+
+        isTrial = now < trialEnd;
+        const diffTime = trialEnd.getTime() - now.getTime();
+        daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
 
     const status = isActive ? 'active' : (isTrial ? 'trialing' : (user.subscriptionStatus || 'expired'));
 

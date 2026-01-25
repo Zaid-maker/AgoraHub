@@ -36,7 +36,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             {isOwnProfile && !subStatus.isActive && (
                 <Link
                     href="/pricing"
-                    className="mb-8 group relative flex flex-col md:flex-row items-center justify-between p-6 rounded-[2rem] bg-gradient-to-r from-gold/20 via-gold/5 entries-to-transparent border border-gold/30 overflow-hidden transition-all hover:bg-gold/30 shadow-xl shadow-gold/5"
+                    className="mb-8 group relative flex flex-col md:flex-row items-center justify-between p-6 rounded-[2rem] bg-gradient-to-r from-gold/20 via-gold/5 to-transparent border border-gold/30 overflow-hidden transition-all hover:bg-gold/30 shadow-xl shadow-gold/5"
                 >
                     <div className="flex items-center gap-6 relative z-10">
                         <div className="w-12 h-12 bg-gold/20 rounded-2xl flex items-center justify-center text-gold shadow-inner border border-gold/20 flex-shrink-0">

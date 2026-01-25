@@ -1,5 +1,6 @@
 import PricingGrid from "@/components/PricingGrid";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function PricingPage() {
     return (
@@ -7,9 +8,12 @@ export default function PricingPage() {
             <div className="text-center mb-16">
                 <div className="w-24 h-24 mx-auto mb-8 relative group flex items-center justify-center">
                     <div className="absolute inset-0 bg-gold/10 blur-2xl group-hover:blur-3xl transition-all rounded-full" />
-                    <img
+                    <Image
                         src="/logo.png"
                         alt="Agora Hub Logo"
+                        width={96}
+                        height={96}
+                        priority
                         className="w-full h-full object-contain relative z-10 mix-blend-screen scale-125 brightness-110"
                     />
                 </div>

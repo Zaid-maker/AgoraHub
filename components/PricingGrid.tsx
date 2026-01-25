@@ -51,7 +51,7 @@ export default function PricingGrid() {
                 setLoadingId(null);
                 return;
             }
-            window.location.href = checkoutUrl;
+            window.location.assign(checkoutUrl);
         } catch (err: any) {
             toast.error(err.message || "Failed to start checkout. Check your console for details.");
             console.error(err);
