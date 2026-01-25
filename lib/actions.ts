@@ -25,20 +25,23 @@ function verifyNotBanned(session: { user?: { role?: string | null } } | null) {
  *
  * @returns An object containing:
  *  - isActive: true if the user has an active Polar.sh subscription.
- *  - isTrial: true if the user is within their 14-day free trial.
- *  - daysLeft: number of days remaining in the trial.
- *  - hasAccess: true if either isActive or isTrial is true.
+ *  - isTrial: true if the user is within their 14-day free local trial.
+ *  - isPolarTrial: true if Polar manages the trial (subscriptionStatus === 'trialing').
+ *  - daysLeft: number of days remaining in the local trial.
+ *  - hasAccess: true if the user has an active subscription or any trial.
  */
 export async function getSubscriptionStatus() {
     const session = await auth.api.getSession({
         headers: await headers(),
     });
 
-    if (!session) return { isActive: false, isTrial: false, daysLeft: 0, hasAccess: false };
+    if (!session) {
+        return { isActive: false, isTrial: false, isPolarTrial: false, daysLeft: 0, hasAccess: false, status: 'none' };
+    }
 
     // Admins always have access
-    if ((session.user as any).role === 'admin') {
-        return { isActive: true, isTrial: false, daysLeft: 0, hasAccess: true };
+    if (session.user.role === 'admin') {
+        return { isActive: true, isTrial: false, isPolarTrial: false, daysLeft: 0, hasAccess: true, status: 'admin' };
     }
 
     const user = await prisma.user.findUnique({
@@ -46,23 +49,47 @@ export async function getSubscriptionStatus() {
         select: { trialStartedAt: true, subscriptionStatus: true }
     });
 
-    if (!user) return { isActive: false, isTrial: false, daysLeft: 0, hasAccess: false };
+    if (!user) {
+        return { isActive: false, isTrial: false, isPolarTrial: false, daysLeft: 0, hasAccess: false, status: 'none' };
+    }
 
     const isActive = user.subscriptionStatus === 'active';
+    const isPolarTrial = user.subscriptionStatus === 'trialing';
     const trialDays = 14;
     const now = new Date();
-    const trialEnd = new Date(user.trialStartedAt);
-    trialEnd.setDate(trialEnd.getDate() + trialDays);
 
-    const isTrial = now < trialEnd;
-    const diffTime = trialEnd.getTime() - now.getTime();
-    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Stricter logic: missing trialStartedAt means the trial is expired
+    let isTrial = false;
+    let daysLeft = 0;
+
+    if (user.trialStartedAt) {
+        const trialStart = new Date(user.trialStartedAt);
+        const trialEnd = new Date(trialStart);
+        trialEnd.setDate(trialEnd.getDate() + trialDays);
+
+        isTrial = now < trialEnd;
+        const diffTime = trialEnd.getTime() - now.getTime();
+        daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    const status = isActive
+        ? 'active'
+        : (isTrial
+            ? 'trialing'
+            : (isPolarTrial ? user.subscriptionStatus : (user.subscriptionStatus || 'expired')));
+
+    if (process.env.NODE_ENV !== 'production') {
+        const redactedId = session.user.id.substring(0, 4) + '...' + session.user.id.substring(session.user.id.length - 4);
+        console.log(`[Subscription Status] User: ${redactedId}, Active: ${isActive}, Trial: ${isTrial}, PolarTrial: ${isPolarTrial}, Days: ${daysLeft}, Status: ${status}`);
+    }
 
     return {
         isActive,
         isTrial,
+        isPolarTrial,
         daysLeft: Math.max(0, daysLeft),
-        hasAccess: isActive || isTrial
+        hasAccess: isActive || isTrial || isPolarTrial,
+        status: status as string
     };
 }
 
@@ -98,7 +125,7 @@ export async function getTopics(categoryId?: string) {
         headers: await headers(),
     });
 
-    const isAdmin = (session?.user as any)?.role === 'admin';
+    const isAdmin = session?.user.role === 'admin';
 
     const topics = await prisma.topic.findMany({
         where: {

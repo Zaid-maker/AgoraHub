@@ -10,7 +10,13 @@ if (!accessToken) {
     }
 }
 
+const polarEnv = process.env.POLAR_ENV;
+
+if (polarEnv && polarEnv !== "sandbox" && polarEnv !== "production") {
+    throw new Error(`Invalid POLAR_ENV: ${polarEnv}. Must be "sandbox" or "production".`);
+}
+
 export const polar = new Polar({
     accessToken: accessToken || "",
-    server: process.env.NODE_ENV === "development" ? "sandbox" : "production",
+    server: (polarEnv as "sandbox" | "production") || (process.env.NODE_ENV === "development" ? "sandbox" : "production"),
 });
