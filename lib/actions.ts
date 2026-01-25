@@ -25,9 +25,10 @@ function verifyNotBanned(session: { user?: { role?: string | null } } | null) {
  *
  * @returns An object containing:
  *  - isActive: true if the user has an active Polar.sh subscription.
- *  - isTrial: true if the user is within their 14-day free trial.
- *  - daysLeft: number of days remaining in the trial.
- *  - hasAccess: true if either isActive or isTrial is true.
+ *  - isTrial: true if the user is within their 14-day free local trial.
+ *  - isPolarTrial: true if Polar manages the trial (subscriptionStatus === 'trialing').
+ *  - daysLeft: number of days remaining in the local trial.
+ *  - hasAccess: true if the user has an active subscription or any trial.
  */
 export async function getSubscriptionStatus() {
     const session = await auth.api.getSession({
@@ -35,12 +36,12 @@ export async function getSubscriptionStatus() {
     });
 
     if (!session) {
-        return { isActive: false, isTrial: false, daysLeft: 0, hasAccess: false, status: 'none' };
+        return { isActive: false, isTrial: false, isPolarTrial: false, daysLeft: 0, hasAccess: false, status: 'none' };
     }
 
     // Admins always have access
     if (session.user.role === 'admin') {
-        return { isActive: true, isTrial: false, daysLeft: 0, hasAccess: true, status: 'admin' };
+        return { isActive: true, isTrial: false, isPolarTrial: false, daysLeft: 0, hasAccess: true, status: 'admin' };
     }
 
     const user = await prisma.user.findUnique({
@@ -49,10 +50,11 @@ export async function getSubscriptionStatus() {
     });
 
     if (!user) {
-        return { isActive: false, isTrial: false, daysLeft: 0, hasAccess: false, status: 'none' };
+        return { isActive: false, isTrial: false, isPolarTrial: false, daysLeft: 0, hasAccess: false, status: 'none' };
     }
 
     const isActive = user.subscriptionStatus === 'active';
+    const isPolarTrial = user.subscriptionStatus === 'trialing';
     const trialDays = 14;
     const now = new Date();
 
@@ -70,18 +72,23 @@ export async function getSubscriptionStatus() {
         daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
 
-    const status = isActive ? 'active' : (isTrial ? 'trialing' : (user.subscriptionStatus || 'expired'));
+    const status = isActive
+        ? 'active'
+        : (isTrial
+            ? 'trialing'
+            : (isPolarTrial ? user.subscriptionStatus : (user.subscriptionStatus || 'expired')));
 
     if (process.env.NODE_ENV !== 'production') {
         const redactedId = session.user.id.substring(0, 4) + '...' + session.user.id.substring(session.user.id.length - 4);
-        console.log(`[Subscription Status] User: ${redactedId}, Active: ${isActive}, Trial: ${isTrial}, Days: ${daysLeft}, Status: ${status}`);
+        console.log(`[Subscription Status] User: ${redactedId}, Active: ${isActive}, Trial: ${isTrial}, PolarTrial: ${isPolarTrial}, Days: ${daysLeft}, Status: ${status}`);
     }
 
     return {
         isActive,
         isTrial,
+        isPolarTrial,
         daysLeft: Math.max(0, daysLeft),
-        hasAccess: isActive || isTrial,
+        hasAccess: isActive || isTrial || isPolarTrial,
         status: status as string
     };
 }
